@@ -144,8 +144,8 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
         </div>
       </div>
 
-      {/* Accordion / Column List */}
-      <div className="space-y-4">
+      {/* Columns Grid: Side-by-side columns on PC (up to 6 columns), accordion on Mobile */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
         {columns.map((col) => {
           const isOver = dragOverColId === col.id;
           const isExpanded = expandedCols[col.id] !== false;
@@ -162,9 +162,9 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDragLeave={(e) => handleDragLeave(e, col.id)}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+              className={`flex flex-col rounded-2xl border transition-all duration-200 overflow-hidden ${
                 isOver
-                  ? 'bg-slate-800/80 border-amber-500 shadow-2xl shadow-amber-500/10'
+                  ? 'bg-slate-800/80 border-amber-500 shadow-2xl shadow-amber-500/10 scale-[1.01]'
                   : col.isCurrentLoggedUser
                   ? 'bg-slate-950/90 border-amber-500/80 shadow-xl shadow-amber-500/5 ring-1 ring-amber-500/40'
                   : isDimmed
@@ -172,117 +172,117 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
                   : 'bg-slate-950/70 border-slate-800/80 shadow-inner'
               }`}
             >
-              {/* Accordion Header */}
-              <button
-                type="button"
+              {/* Header (Clickable on Mobile, fixed column title on PC) */}
+              <div
                 onClick={() => toggleCol(col.id)}
-                className={`w-full p-3.5 sm:p-4 flex items-center justify-between gap-2.5 sm:gap-3 text-left transition select-none ${
+                className={`p-3.5 sm:p-4 border-b border-slate-800/80 flex items-center justify-between gap-2.5 transition select-none cursor-pointer md:cursor-default ${
                   col.isCurrentLoggedUser
-                    ? 'bg-gradient-to-r from-amber-500/10 via-slate-900/60 to-transparent hover:bg-slate-900/80'
-                    : 'bg-slate-900/50 hover:bg-slate-900/80'
+                    ? 'bg-gradient-to-r from-amber-500/10 via-slate-900/60 to-transparent'
+                    : 'bg-slate-900/50'
                 }`}
               >
-                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${col.avatarColor} flex items-center justify-center font-extrabold text-white text-sm shadow-md shrink-0`}
+                    className={`w-9 h-9 rounded-xl bg-gradient-to-br ${col.avatarColor} flex items-center justify-center font-extrabold text-white text-sm shadow-md shrink-0`}
                   >
                     {col.name.charAt(0)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h4 className="font-extrabold text-white text-sm sm:text-base leading-snug break-words">
+                    <h4 className="font-extrabold text-white text-sm leading-snug truncate">
                       {col.name}
                     </h4>
-                    <p className="text-[11px] sm:text-xs text-slate-400 truncate mt-0.5">
+                    <p className="text-[11px] text-slate-400 truncate mt-0.5">
                       {col.title}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <span
-                    className={`text-[11px] sm:text-xs font-black px-2.5 py-1 rounded-full font-mono-numbers whitespace-nowrap ${
+                    className={`text-[11px] font-black px-2 py-0.5 rounded-full font-mono-numbers whitespace-nowrap ${
                       col.isCurrentLoggedUser
                         ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                         : 'bg-slate-800 text-slate-300 border border-slate-700/60'
                     }`}
                   >
-                    {col.stores.length} <span className="hidden xs:inline">locales</span>
+                    {col.stores.length}
                   </span>
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-slate-800/60 flex items-center justify-center text-slate-400 shrink-0">
+                  {/* Chevron only on mobile */}
+                  <div className="w-5 h-5 flex items-center justify-center text-slate-400 md:hidden">
                     {isExpanded ? (
-                      <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+                      <ChevronUp className="w-3.5 h-3.5 text-amber-400" />
                     ) : (
-                      <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <ChevronDown className="w-3.5 h-3.5" />
                     )}
                   </div>
                 </div>
-              </button>
+              </div>
 
-              {/* Accordion Content / Stores List */}
-              {isExpanded && (
-                <div className="p-4 border-t border-slate-800/60 bg-slate-950/60">
-                  {filteredStores.length === 0 ? (
-                    <div className="p-6 text-center text-slate-500 text-xs border border-dashed border-slate-800/60 rounded-xl">
-                      {searchFilter
-                        ? 'No se encontraron sucursales con esa búsqueda'
-                        : isOver
-                        ? 'Soltá aquí para transferir la sucursal'
-                        : 'Sin sucursales asignadas'}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
-                      {filteredStores.map((store) => {
-                        const isDragging = draggedStoreId === store.id;
+              {/* Stores List: Always visible on PC, collapsible on Mobile */}
+              <div
+                className={`p-2.5 sm:p-3 flex-1 flex-col space-y-2 bg-slate-950/60 ${
+                  isExpanded ? 'flex' : 'hidden md:flex'
+                }`}
+              >
+                {filteredStores.length === 0 ? (
+                  <div className="p-4 text-center text-slate-500 text-xs border border-dashed border-slate-800/60 rounded-xl my-auto">
+                    {searchFilter
+                      ? 'Sin coincidencias'
+                      : isOver
+                      ? 'Soltá aquí'
+                      : 'Sin sucursales'}
+                  </div>
+                ) : (
+                  filteredStores.map((store) => {
+                    const isDragging = draggedStoreId === store.id;
 
-                        return (
-                          <div
-                            key={store.id}
-                            draggable={isAdmin}
-                            onDragStart={(e) => handleDragStart(e, store.id)}
-                            className={`flex items-center justify-between p-3 rounded-xl border text-xs font-semibold transition-all ${
-                              isAdmin
-                                ? 'cursor-grab active:cursor-grabbing hover:border-amber-500/60 hover:bg-slate-850 hover:shadow-lg'
-                                : 'cursor-default'
-                            } ${
-                              isDragging
-                                ? 'opacity-40 border-amber-500 scale-95'
-                                : isDimmed
-                                ? 'bg-slate-900/60 border-slate-800/60 text-slate-300'
-                                : 'bg-slate-900 border-slate-800 text-slate-200'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                              {isAdmin && (
-                                <GripVertical className="w-4 h-4 text-slate-500 hover:text-amber-400 transition shrink-0" />
-                              )}
-                              <span className="truncate text-white font-bold text-xs">
-                                {store.name}
-                              </span>
-                              {store.isPropia && (
-                                <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[9px] font-black uppercase tracking-wider shrink-0 border border-amber-500/30">
-                                  Propia
-                                </span>
-                              )}
-                              {store.isExperience && (
-                                <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[9px] font-black uppercase tracking-wider shrink-0 border border-purple-500/30">
-                                  Experience
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                    return (
+                      <div
+                        key={store.id}
+                        draggable={isAdmin}
+                        onDragStart={(e) => handleDragStart(e, store.id)}
+                        className={`flex items-center justify-between p-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                          isAdmin
+                            ? 'cursor-grab active:cursor-grabbing hover:border-amber-500/60 hover:bg-slate-850 hover:shadow-lg'
+                            : 'cursor-default'
+                        } ${
+                          isDragging
+                            ? 'opacity-40 border-amber-500 scale-95'
+                            : isDimmed
+                            ? 'bg-slate-900/60 border-slate-800/60 text-slate-300'
+                            : 'bg-slate-900 border-slate-800 text-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                          {isAdmin && (
+                            <GripVertical className="w-3.5 h-3.5 text-slate-500 hover:text-amber-400 transition shrink-0" />
+                          )}
+                          <span className="truncate text-white font-bold text-xs">
+                            {store.name}
+                          </span>
+                          {store.isPropia && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[9px] font-black uppercase tracking-wider shrink-0 border border-amber-500/30">
+                              Propia
+                            </span>
+                          )}
+                          {store.isExperience && (
+                            <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[9px] font-black uppercase tracking-wider shrink-0 border border-purple-500/30">
+                              Experience
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
 
-                  {/* Drop zone helper only shown to admin */}
-                  {isAdmin && isOver && (
-                    <div className="mt-2 p-3 text-center border-2 border-dashed border-amber-500 rounded-xl text-amber-400 text-xs font-bold animate-pulse">
-                      Soltá aquí para reasignar a {col.name}
-                    </div>
-                  )}
-                </div>
-              )}
+                {/* Drop zone helper only shown to admin */}
+                {isAdmin && isOver && (
+                  <div className="mt-2 p-2 text-center border-2 border-dashed border-amber-500 rounded-xl text-amber-400 text-xs font-bold animate-pulse">
+                    Soltá aquí
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}

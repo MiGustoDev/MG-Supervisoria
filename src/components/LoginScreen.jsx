@@ -36,7 +36,7 @@ export function LoginScreen({ onLoginSuccess }) {
         {/* Brand */}
         <div className="flex flex-col items-center text-center mb-6">
           <img
-            src="/Logo_Mi_Gusto_2025.png"
+            src={`${import.meta.env.BASE_URL}Logo_Mi_Gusto_2025.png`}
             alt="Mi Gusto"
             className="h-10 sm:h-12 w-auto object-contain brightness-110 mb-2 drop-shadow-[0_2px_12px_rgba(245,158,11,0.2)]"
           />

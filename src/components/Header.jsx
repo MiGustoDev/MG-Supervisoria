@@ -30,7 +30,7 @@ export function Header({
         <div className="flex flex-col">
           <div className="flex items-center gap-3">
             <img
-              src="/Logo_Mi_Gusto_2025.png"
+              src={`${import.meta.env.BASE_URL}Logo_Mi_Gusto_2025.png`}
               alt="Mi Gusto"
               className="h-7 sm:h-9 w-auto object-contain brightness-110 drop-shadow-[0_2px_12px_rgba(245,158,11,0.15)]"
             />
