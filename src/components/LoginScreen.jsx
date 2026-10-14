@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, Mail, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
-import { authenticateSupervisor } from '../lib/auth';
+import { authenticateSupervisorAsync } from '../lib/auth';
 
 export function LoginScreen({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -9,20 +9,23 @@ export function LoginScreen({ onLoginSuccess }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const res = authenticateSupervisor(email, password);
+    try {
+      const res = await authenticateSupervisorAsync(email, password);
       setIsLoading(false);
       if (res.success) {
         onLoginSuccess(res.user);
       } else {
         setErrorMsg(res.error);
       }
-    }, 350);
+    } catch (err) {
+      setIsLoading(false);
+      setErrorMsg('Error al verificar credenciales.');
+    }
   };
 
   return (

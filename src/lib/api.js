@@ -1,6 +1,6 @@
 import { getSupabase } from './supabase';
 
-const LS_CONFIG_KEY = 'mg_structure_v7';
+const LS_CONFIG_KEY = 'mg_structure_v8';
 const LS_CARGAS_KEY = 'mg_local_cargas';
 
 // Default initial dataset with standard Mi Gusto structure
@@ -22,8 +22,14 @@ export const INITIAL_CONFIG = {
     {
       id: 'sup_lidya',
       name: 'Lidya Tello',
-      title: 'Supervisora de Tiendas',
+      title: 'Administradora General',
       avatarColor: 'from-sky-500 to-indigo-600',
+    },
+    {
+      id: 'sup_evelyn',
+      name: 'Evelyn Cedrón',
+      title: 'Supervisora de Tiendas',
+      avatarColor: 'from-teal-500 to-cyan-600',
     },
     // Supervisores de Tiendas Propias
     {
@@ -74,19 +80,19 @@ export const INITIAL_CONFIG = {
     { id: 't_tigre', name: 'Tigre', sup: 'sup_wanda' },
     { id: 't_villa_urquiza', name: 'Villa Urquiza', sup: 'sup_wanda' },
 
-    // Lidya Tello (12 locales)
-    { id: 't_bella_vista', name: 'Bella Vista', sup: 'sup_lidya' },
-    { id: 't_devoto', name: 'Devoto', sup: 'sup_lidya' },
-    { id: 't_escobar', name: 'Escobar', sup: 'sup_lidya' },
-    { id: 't_florida', name: 'Florida', sup: 'sup_lidya' },
-    { id: 't_hurlingham', name: 'Hurlingham', sup: 'sup_lidya' },
-    { id: 't_jose_c_paz', name: 'José C. Paz', sup: 'sup_lidya' },
-    { id: 't_muniz', name: 'Muñiz', sup: 'sup_lidya' },
-    { id: 't_pilar_centro', name: 'Pilar Centro', sup: 'sup_lidya' },
-    { id: 't_pilar_derqui', name: 'Pilar Derqui', sup: 'sup_lidya' },
-    { id: 't_san_fernando', name: 'San Fernando', sup: 'sup_lidya' },
-    { id: 't_san_martin', name: 'San Martín', sup: 'sup_lidya' },
-    { id: 't_san_miguel', name: 'San Miguel', sup: 'sup_lidya' },
+    // Evelyn Cedrón (12 locales transferidos desde Lidya Tello)
+    { id: 't_bella_vista', name: 'Bella Vista', sup: 'sup_evelyn' },
+    { id: 't_devoto', name: 'Devoto', sup: 'sup_evelyn' },
+    { id: 't_escobar', name: 'Escobar', sup: 'sup_evelyn' },
+    { id: 't_florida', name: 'Florida', sup: 'sup_evelyn' },
+    { id: 't_hurlingham', name: 'Hurlingham', sup: 'sup_evelyn' },
+    { id: 't_jose_c_paz', name: 'José C. Paz', sup: 'sup_evelyn' },
+    { id: 't_muniz', name: 'Muñiz', sup: 'sup_evelyn' },
+    { id: 't_pilar_centro', name: 'Pilar Centro', sup: 'sup_evelyn' },
+    { id: 't_pilar_derqui', name: 'Pilar Derqui', sup: 'sup_evelyn' },
+    { id: 't_san_fernando', name: 'San Fernando', sup: 'sup_evelyn' },
+    { id: 't_san_martin', name: 'San Martín', sup: 'sup_evelyn' },
+    { id: 't_san_miguel', name: 'San Miguel', sup: 'sup_evelyn' },
 
     // Tiendas Propias de Mi Gusto (1 supervisora dedicada por tienda)
     { id: 't_canitas', name: 'Cañitas', sup: 'sup_selene', isPropia: true, isExperience: true },
@@ -221,7 +227,10 @@ export const api = {
         unidades: r.unidades,
         ticket_promedio: r.comandas > 0 ? Math.round((r.venta / r.comandas) * 100) / 100 : null,
         unidades_por_comanda: r.comandas > 0 ? Math.round((r.unidades / r.comandas) * 100) / 100 : null,
-        cargado_en: new Date().toISOString(),
+        cargado_en: r.cargadoEn || new Date().toISOString(),
+        cargado_por: r.cargadoPor || null,
+        modificado_por: r.modificadoPor || null,
+        modificado_en: r.modificadoEn || null,
       }));
 
       const { error } = await supabase.from('mg_cargas').upsert(rows);
@@ -257,6 +266,10 @@ export const api = {
             unidades: Number(row.unidades),
             ticketPromedio: row.ticket_promedio,
             unidadesPorComanda: row.unidades_por_comanda,
+            cargadoEn: row.cargado_en,
+            cargadoPor: row.cargado_por,
+            modificadoPor: row.modificado_por,
+            modificadoEn: row.modificado_en,
           }));
         }
       } catch (e) {
@@ -268,4 +281,85 @@ export const api = {
     const all = localRaw ? JSON.parse(localRaw) : [];
     return all.filter((r) => r.fecha && r.fecha.startsWith(mes));
   },
+
+  // Obtener todas las cargas registradas (para historial administrativo)
+  async getAllCargas() {
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('mg_cargas')
+          .select('*')
+          .order('fecha', { ascending: false })
+          .order('tienda_nombre', { ascending: true });
+        if (!error && Array.isArray(data)) {
+          return data.map((row) => ({
+            id: row.id,
+            tiendaId: row.tienda_id,
+            tiendaNombre: row.tienda_nombre,
+            supervisoraId: row.supervisora_id,
+            supervisoraNombre: row.supervisora_nombre,
+            fecha: row.fecha,
+            mes: row.mes,
+            comandas: Number(row.comandas),
+            venta: Number(row.venta),
+            unidades: Number(row.unidades),
+            ticketPromedio: row.ticket_promedio,
+            unidadesPorComanda: row.unidades_por_comanda,
+            cargadoEn: row.cargado_en,
+            cargadoPor: row.cargado_por,
+            modificadoPor: row.modificado_por,
+            modificadoEn: row.modificado_en,
+          }));
+        }
+      } catch (e) {
+        console.warn('Supabase getAllCargas error, using local fallback:', e);
+      }
+    }
+
+    const localRaw = localStorage.getItem(LS_CARGAS_KEY);
+    const all = localRaw ? JSON.parse(localRaw) : [];
+    return all.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  },
+
+  // Eliminar un registro individual de carga
+  async deleteCargaRecord(id, tiendaId, fecha) {
+    const targetId = id || `${tiendaId}_${fecha}`;
+    const supabase = getSupabase();
+
+    // 1. Eliminar localmente
+    const localRaw = localStorage.getItem(LS_CARGAS_KEY);
+    if (localRaw) {
+      try {
+        const all = JSON.parse(localRaw);
+        const filtered = all.filter((x) => {
+          if (x.id && targetId) return x.id !== targetId;
+          return !(x.tiendaId === tiendaId && x.fecha === fecha);
+        });
+        localStorage.setItem(LS_CARGAS_KEY, JSON.stringify(filtered));
+      } catch (e) {
+        console.warn('Error deleting local carga record:', e);
+      }
+    }
+
+    // 2. Eliminar en Supabase
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('mg_cargas')
+          .delete()
+          .eq('id', targetId);
+        if (error) {
+          console.error('Supabase deleteCargaRecord error:', error);
+          throw error;
+        }
+      } catch (err) {
+        console.error('Failed to delete carga from Supabase:', err);
+        throw err;
+      }
+    }
+
+    return true;
+  },
 };
+

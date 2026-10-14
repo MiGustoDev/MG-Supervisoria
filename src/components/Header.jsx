@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, LogOut, ChevronDown, Check, ShieldCheck, Database, X } from 'lucide-react';
+import { User, LogOut, ChevronDown, Check, ShieldCheck, Database, X, Lock } from 'lucide-react';
 
 export function Header({
   currentUser,
   onLogout,
   onOpenDbModal,
   isDbConfigured,
+  onOpenChangePassword,
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -116,12 +117,25 @@ export function Header({
 
               {/* Menu options */}
               <div className="space-y-1">
+                {onOpenChangePassword && (
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      onOpenChangePassword();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60 transition text-left"
+                  >
+                    <Lock className="w-4 h-4 text-amber-400" />
+                    <span>Cambiar contraseña</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => {
                     setIsMenuOpen(false);
                     onLogout();
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/50 transition text-left"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/50 transition text-left"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Cerrar Sesión</span>

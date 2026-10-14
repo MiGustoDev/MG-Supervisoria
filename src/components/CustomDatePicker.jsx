@@ -9,7 +9,7 @@ const MONTH_NAMES = [
 
 const DAY_NAMES = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'];
 
-export function CustomDatePicker({ value, onChange, maxDate }) {
+export function CustomDatePicker({ value, onChange, maxDate, compact = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -119,13 +119,17 @@ export function CustomDatePicker({ value, onChange, maxDate }) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-slate-950 border border-slate-800 hover:border-amber-500/70 focus:border-amber-500 rounded-2xl px-4 py-3 text-white font-bold text-base shadow-inner font-mono-numbers flex items-center justify-between cursor-pointer transition group"
+        className={`w-full bg-slate-900 border border-slate-700 hover:border-amber-400 focus:border-amber-400 text-white font-mono-numbers flex items-center justify-between cursor-pointer transition group ${
+          compact
+            ? 'rounded-xl px-3 py-2 text-xs font-bold'
+            : 'rounded-2xl px-4 py-3 text-base font-bold shadow-inner'
+        }`}
       >
         <div className="flex items-center gap-2">
-          <span className="text-amber-300 font-black text-lg tracking-wide">
+          <span className={`${compact ? 'text-amber-400 font-bold font-mono text-xs' : 'text-amber-300 font-black text-lg tracking-wide'}`}>
             {`${d}/${m}/${y}`}
           </span>
-          {value === todayStr() ? (
+          {!compact && (value === todayStr() ? (
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-sans">
               Hoy
             </span>
@@ -133,12 +137,12 @@ export function CustomDatePicker({ value, onChange, maxDate }) {
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-sans">
               Ayer
             </span>
-          ) : null}
+          ) : null)}
         </div>
 
         <div className="flex items-center gap-1.5 text-xs text-slate-400 group-hover:text-amber-400 font-sans transition">
-          <span>{isOpen ? 'Cerrar' : 'Elegir fecha'}</span>
-          <CalendarIcon className="w-4 h-4 text-amber-400" />
+          {!compact && <span>{isOpen ? 'Cerrar' : 'Elegir fecha'}</span>}
+          <CalendarIcon className={`${compact ? 'w-3.5 h-3.5 text-sky-400' : 'w-4 h-4 text-amber-400'}`} />
         </div>
       </button>
 

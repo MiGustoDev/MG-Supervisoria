@@ -11,6 +11,7 @@ import {
   MapPin,
   Search,
 } from 'lucide-react';
+import { isUserAdmin, canUserManageStores } from '../lib/auth';
 
 export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
   const [draggedStoreId, setDraggedStoreId] = useState(null);
@@ -20,8 +21,9 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
   const supervisoras = config.supervisoras || [];
   const tiendas = config.tiendas || [];
 
-  // Check if current user is admin
-  const isAdmin = currentUser?.email === 'admin@migusto.com.ar' || currentUser?.supId === '__all';
+  // Check if current user can move stores (Admin and Elizabeth Colman only)
+  const canMoveStores = canUserManageStores(currentUser);
+  const isAdmin = isUserAdmin(currentUser);
   const currentUserId = currentUser?.supId;
 
   // Track expanded state for accordion panels (by default, logged supervisor is expanded or all if admin)
@@ -41,16 +43,8 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
     }));
   };
 
-  // Reorder supervisoras: Logged supervisor comes first!
-  const sortedSupervisoras = [...supervisoras].sort((a, b) => {
-    if (!isAdmin && currentUserId) {
-      if (a.id === currentUserId) return -1;
-      if (b.id === currentUserId) return 1;
-    }
-    return 0;
-  });
-
-  const columns = sortedSupervisoras.map((s) => ({
+  // Build column objects with store count
+  const allColumns = supervisoras.map((s) => ({
     id: s.id,
     name: s.name,
     title: s.title || 'Supervisora de Tiendas',
@@ -59,9 +53,24 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
     isCurrentLoggedUser: currentUserId === s.id,
   }));
 
+  // Sort helper: prioritize logged supervisor if non-admin, else sort by store count desc
+  const sortColumns = (cols) => {
+    return [...cols].sort((a, b) => {
+      if (!isAdmin && currentUserId) {
+        if (a.id === currentUserId) return -1;
+        if (b.id === currentUserId) return 1;
+      }
+      return b.stores.length - a.stores.length;
+    });
+  };
+
+  // Group columns: those with >= 2 stores get full prominent columns, <= 1 store grouped compactly
+  const multiStoreColumns = sortColumns(allColumns.filter((c) => c.stores.length >= 2));
+  const compactColumns = sortColumns(allColumns.filter((c) => c.stores.length < 2));
+
   // Drag Handlers (ONLY enabled for admin)
   const handleDragStart = (e, storeId) => {
-    if (!isAdmin) {
+    if (!canMoveStores) {
       e.preventDefault();
       return;
     }
@@ -71,7 +80,7 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
   };
 
   const handleDragOver = (e, colId) => {
-    if (!isAdmin) return;
+    if (!canMoveStores) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     if (dragOverColId !== colId) {
@@ -80,14 +89,14 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
   };
 
   const handleDragLeave = (e, colId) => {
-    if (!isAdmin) return;
+    if (!canMoveStores) return;
     if (dragOverColId === colId) {
       setDragOverColId(null);
     }
   };
 
   const handleDrop = (e, targetColId) => {
-    if (!isAdmin) return;
+    if (!canMoveStores) return;
     e.preventDefault();
     setDragOverColId(null);
     const storeId = e.dataTransfer.getData('text/plain') || draggedStoreId;
@@ -117,15 +126,15 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
           </div>
           <div>
             <h3 className="text-base sm:text-xl font-black text-white tracking-tight">
-              {isAdmin ? (
+              {canMoveStores ? (
                 'Arrastrá cualquier sucursal y soltala en otra supervisora para transferirla al instante'
               ) : (
                 'Sucursales y asignaciones por supervisora'
               )}
             </h3>
-            {isAdmin && (
+            {canMoveStores && (
               <p className="text-xs text-slate-400 mt-1">
-                Modo Administrador: Tenés permisos para reasignar sucursales entre bandejas.
+                Tenés permisos para reasignar sucursales entre bandejas.
               </p>
             )}
           </div>
@@ -144,12 +153,11 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
         </div>
       </div>
 
-      {/* Columns Grid: Side-by-side columns on PC (up to 6 columns), accordion on Mobile */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
-        {columns.map((col) => {
+      {/* Helper to render a column */}
+      {(() => {
+        const renderColumn = (col, isCompact = false) => {
           const isOver = dragOverColId === col.id;
           const isExpanded = expandedCols[col.id] !== false;
-          // If supervisor: their own column is editable/active, others are read-only and dimmed
           const isDimmed = !isAdmin && !col.isCurrentLoggedUser;
 
           const filteredStores = col.stores.filter((t) =>
@@ -172,10 +180,10 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
                   : 'bg-slate-950/70 border-slate-800/80 shadow-inner'
               }`}
             >
-              {/* Header (Clickable on Mobile, fixed column title on PC) */}
+              {/* Header */}
               <div
                 onClick={() => toggleCol(col.id)}
-                className={`p-3.5 sm:p-4 border-b border-slate-800/80 flex items-center justify-between gap-2.5 transition select-none cursor-pointer md:cursor-default ${
+                className={`p-3 sm:p-3.5 border-b border-slate-800/80 flex items-center justify-between gap-2.5 transition select-none cursor-pointer md:cursor-default ${
                   col.isCurrentLoggedUser
                     ? 'bg-gradient-to-r from-amber-500/10 via-slate-900/60 to-transparent'
                     : 'bg-slate-900/50'
@@ -183,21 +191,21 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div
-                    className={`w-9 h-9 rounded-xl bg-gradient-to-br ${col.avatarColor} flex items-center justify-center font-extrabold text-white text-sm shadow-md shrink-0`}
+                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br ${col.avatarColor} flex items-center justify-center font-extrabold text-white text-xs sm:text-sm shadow-md shrink-0`}
                   >
                     {col.name.charAt(0)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h4 className="font-extrabold text-white text-sm leading-snug truncate">
+                    <h4 className="font-extrabold text-white text-xs sm:text-sm leading-snug truncate">
                       {col.name}
                     </h4>
-                    <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                    <p className="text-[10px] sm:text-[11px] text-slate-400 truncate mt-0.5">
                       {col.title}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <span
                     className={`text-[11px] font-black px-2 py-0.5 rounded-full font-mono-numbers whitespace-nowrap ${
                       col.isCurrentLoggedUser
@@ -207,7 +215,6 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
                   >
                     {col.stores.length}
                   </span>
-                  {/* Chevron only on mobile */}
                   <div className="w-5 h-5 flex items-center justify-center text-slate-400 md:hidden">
                     {isExpanded ? (
                       <ChevronUp className="w-3.5 h-3.5 text-amber-400" />
@@ -218,14 +225,14 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
                 </div>
               </div>
 
-              {/* Stores List: Always visible on PC, collapsible on Mobile */}
+              {/* Stores List */}
               <div
-                className={`p-2.5 sm:p-3 flex-1 flex-col space-y-2 bg-slate-950/60 ${
+                className={`p-2.5 sm:p-3 flex-1 flex-col space-y-1.5 bg-slate-950/60 ${
                   isExpanded ? 'flex' : 'hidden md:flex'
                 }`}
               >
                 {filteredStores.length === 0 ? (
-                  <div className="p-4 text-center text-slate-500 text-xs border border-dashed border-slate-800/60 rounded-xl my-auto">
+                  <div className="p-3 text-center text-slate-500 text-xs border border-dashed border-slate-800/60 rounded-xl my-auto">
                     {searchFilter
                       ? 'Sin coincidencias'
                       : isOver
@@ -239,10 +246,10 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
                     return (
                       <div
                         key={store.id}
-                        draggable={isAdmin}
+                        draggable={canMoveStores}
                         onDragStart={(e) => handleDragStart(e, store.id)}
-                        className={`flex items-center justify-between p-2.5 rounded-xl border text-xs font-semibold transition-all ${
-                          isAdmin
+                        className={`flex items-center justify-between p-2 rounded-xl border text-xs font-semibold transition-all ${
+                          canMoveStores
                             ? 'cursor-grab active:cursor-grabbing hover:border-amber-500/60 hover:bg-slate-850 hover:shadow-lg'
                             : 'cursor-default'
                         } ${
@@ -254,7 +261,7 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
                         }`}
                       >
                         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                          {isAdmin && (
+                          {canMoveStores && (
                             <GripVertical className="w-3.5 h-3.5 text-slate-500 hover:text-amber-400 transition shrink-0" />
                           )}
                           <span className="truncate text-white font-bold text-xs">
@@ -276,17 +283,56 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
                   })
                 )}
 
-                {/* Drop zone helper only shown to admin */}
-                {isAdmin && isOver && (
-                  <div className="mt-2 p-2 text-center border-2 border-dashed border-amber-500 rounded-xl text-amber-400 text-xs font-bold animate-pulse">
+                {canMoveStores && isOver && (
+                  <div className="mt-1.5 p-2 text-center border-2 border-dashed border-amber-500 rounded-xl text-amber-400 text-xs font-bold animate-pulse">
                     Soltá aquí
                   </div>
                 )}
               </div>
             </div>
           );
-        })}
-      </div>
+        };
+
+        return (
+          <div className="space-y-6">
+            {/* Primary Zones (Supervisors with multiple stores) */}
+            {multiStoreColumns.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-300">
+                    Zonas Operativas Principales
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    (Supervisores con múltiples sucursales)
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {multiStoreColumns.map((col) => renderColumn(col, false))}
+                </div>
+              </div>
+            )}
+
+            {/* Dedicated / Single Store / Standby Supervisors */}
+            {compactColumns.length > 0 && (
+              <div className="pt-2 border-t border-slate-800/80">
+                <div className="flex items-center gap-2 mb-3 px-1 mt-2">
+                  <div className="w-2 h-2 rounded-full bg-slate-500" />
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+                    Supervisión Dedicada / Tiendas Propias
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    (1 o menos sucursales)
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {compactColumns.map((col) => renderColumn(col, true))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

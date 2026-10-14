@@ -1,7 +1,7 @@
 import React from 'react';
 import { ARS, INT, DEC, fmtDay } from '../lib/formatters';
 import { CustomMonthPicker } from './CustomMonthPicker';
-import { Calendar, DollarSign, Receipt, ShoppingBag, Target, FileSpreadsheet } from 'lucide-react';
+import { Calendar, DollarSign, Receipt, ShoppingBag, Target, FileText } from 'lucide-react';
 
 export function MonthlyDashboard({
   month,
@@ -11,6 +11,7 @@ export function MonthlyDashboard({
   supervisorasMonthly,
   daysMonthly,
   isAllSupervisors,
+  onExportMonthPdf,
   onExportMonthCsv,
 }) {
   return (
@@ -31,14 +32,6 @@ export function MonthlyDashboard({
             value={month}
             onChange={onMonthChange}
           />
-
-          <button
-            onClick={onExportMonthCsv}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs sm:text-sm font-semibold rounded-xl transition"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-            <span>Excel Mes</span>
-          </button>
         </div>
       </div>
 

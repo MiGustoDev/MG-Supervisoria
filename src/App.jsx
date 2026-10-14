@@ -8,11 +8,14 @@ import { DaySummaryBar } from './components/DaySummaryBar';
 import { DayRankTable } from './components/DayRankTable';
 import { MonthlyDashboard } from './components/MonthlyDashboard';
 import { SupervisorKanbanBoard } from './components/SupervisorKanbanBoard';
+import { HistoryRecordsSection } from './components/HistoryRecordsSection';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { CustomDatePicker } from './components/CustomDatePicker';
 import { CustomMonthPicker } from './components/CustomMonthPicker';
 import { api } from './lib/api';
 import { getSupabaseCredentials } from './lib/supabase';
-import { getStoredSession, clearSession } from './lib/auth';
+import { getStoredSession, clearSession, isUserAdmin, canUserAccessHistory } from './lib/auth';
+import { exportRankingPDF } from './lib/pdfExport';
 import {
   getYesterdayStr,
   fmtDayLong,
@@ -26,7 +29,7 @@ import {
   parseYmd,
   pad,
 } from './lib/formatters';
-import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy } from 'lucide-react';
+import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy, FileText } from 'lucide-react';
 
 const LS_SELECTED_SUP = 'mg_active_supervisora';
 const ALL_SUP = '__all';
@@ -35,6 +38,7 @@ export default function App() {
   const dateInputRef = useRef(null);
   const [currentUser, setCurrentUser] = useState(() => getStoredSession());
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const dbCreds = getSupabaseCredentials();
 
   // Core state
@@ -65,8 +69,12 @@ export default function App() {
   // Monthly data
   const [monthlyRows, setMonthlyRows] = useState([]);
 
+  // All Cargas (for Elizabeth & Admin History tab)
+  const [allCargas, setAllCargas] = useState([]);
+  const [isLoadingAllCargas, setIsLoadingAllCargas] = useState(false);
+
   // UI state
-  const [activeTab, setActiveTab] = useState('carga'); // 'carga' | 'ranking' | 'kanban'
+  const [activeTab, setActiveTab] = useState('carga'); // 'carga' | 'ranking' | 'kanban' | 'historial'
   const [rankingView, setRankingView] = useState('mes'); // 'mes' | 'dia'
   const [dayRankMetric, setDayRankMetric] = useState('v');
   const [isSaving, setIsSaving] = useState(false);
@@ -76,6 +84,9 @@ export default function App() {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 4000);
   };
+
+  // Permiso para ver u operar la pestaña de historial
+  const canAccessHistory = canUserAccessHistory(currentUser);
 
   // 1. Initial Load: Config
   useEffect(() => {
@@ -131,6 +142,86 @@ export default function App() {
   useEffect(() => {
     loadMonthData(selectedMonth);
   }, [selectedMonth]);
+
+  // 4. Load All Cargas (for History Tab)
+  const loadAllCargas = async () => {
+    if (!canAccessHistory) return;
+    setIsLoadingAllCargas(true);
+    try {
+      const rows = await api.getAllCargas();
+      setAllCargas(rows);
+    } catch (err) {
+      console.error('Error loading all cargas:', err);
+      showToast('No se pudo cargar el historial completo', 'error');
+    } finally {
+      setIsLoadingAllCargas(false);
+    }
+  };
+
+  useEffect(() => {
+    if (canAccessHistory && activeTab === 'historial') {
+      loadAllCargas();
+    }
+  }, [canAccessHistory, activeTab]);
+
+  // Handler to delete a single carga record from history
+  const handleDeleteCargaRecord = async (record) => {
+    try {
+      await api.deleteCargaRecord(record.id, record.tiendaId, record.fecha);
+      showToast(`Registro de ${record.tiendaNombre} (${record.fecha}) eliminado.`, 'info');
+      await loadAllCargas();
+      if (record.fecha === selectedFecha) {
+        await loadDayData(selectedFecha);
+      }
+      if (record.fecha.startsWith(selectedMonth)) {
+        await loadMonthData(selectedMonth);
+      }
+    } catch (err) {
+      console.error('Error deleting record:', err);
+      showToast('No se pudo eliminar el registro. Verificá permisos.', 'error');
+    }
+  };
+
+  // Handler to update an existing carga record from history (Admin only)
+  const handleUpdateCargaRecord = async (updatedRecord, originalRecord) => {
+    try {
+      // Si cambió de fecha o sucursal, la primary key de la BD (tiendaId_fecha) cambia.
+      // Borramos el registro original para no dejar duplicados.
+      if (
+        originalRecord &&
+        (originalRecord.tiendaId !== updatedRecord.tiendaId || originalRecord.fecha !== updatedRecord.fecha)
+      ) {
+        await api.deleteCargaRecord(originalRecord.id, originalRecord.tiendaId, originalRecord.fecha);
+      }
+
+      const payload = {
+        ...updatedRecord,
+        modificadoPor: currentUser?.name || 'Administración',
+        modificadoEn: new Date().toISOString(),
+      };
+
+      await api.saveCargasDia([payload]);
+      showToast(`Registro de ${updatedRecord.tiendaNombre} modificado exitosamente.`, 'success');
+      await loadAllCargas();
+
+      // Refrescar vistas del día y del mes involucradas
+      const affectedDates = new Set([updatedRecord.fecha, originalRecord?.fecha].filter(Boolean));
+      if (affectedDates.has(selectedFecha)) {
+        await loadDayData(selectedFecha);
+      }
+      if (
+        updatedRecord.fecha.startsWith(selectedMonth) ||
+        (originalRecord && originalRecord.fecha.startsWith(selectedMonth))
+      ) {
+        await loadMonthData(selectedMonth);
+      }
+      return true;
+    } catch (err) {
+      console.error('Error updating record:', err);
+      showToast('No se pudo actualizar el registro. Verificá la conexión.', 'error');
+      throw err;
+    }
+  };
 
   // Filtered Stores by supervisor
   const activeStores = useMemo(() => {
@@ -342,7 +433,26 @@ export default function App() {
     showToast('Excel del día descargado', 'success');
   };
 
-  // Export Month CSV
+  // Exportar Ranking / Métricas en PDF de alta calidad
+  const handleExportRankingPdf = () => {
+    try {
+      exportRankingPDF({
+        rankingView,
+        dateTitle: fmtDayLong(selectedFecha),
+        month: selectedMonth,
+        rankedList: rankedDayList,
+        kpis: monthlyData.kpis,
+        storesMonthly: monthlyData.storesMonthly,
+        supervisorasMonthly: monthlyData.supervisorasMonthly,
+      });
+      showToast('Informe PDF de métricas generado y descargado', 'success');
+    } catch (err) {
+      console.error('Error generating ranking PDF:', err);
+      showToast('Error al generar el PDF del ranking', 'error');
+    }
+  };
+
+  // Export Month CSV (mantenido como utilitario opcional)
   const handleExportMonthCsv = () => {
     const rows = [
       'Fecha;Supervisora;Tienda;Comandas;Venta;Unidades;Ticket Promedio;Unidades por Comanda',
@@ -539,6 +649,14 @@ export default function App() {
         onLogout={handleLogout}
         onOpenDbModal={() => setIsDbModalOpen(true)}
         isDbConfigured={dbCreds.isConfigured}
+        onOpenChangePassword={() => setIsChangePasswordOpen(true)}
+      />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        currentUser={currentUser}
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
       />
 
       {/* Main Container */}
@@ -565,7 +683,7 @@ export default function App() {
 
         {/* Main Tabs Navigation */}
         <div className="mb-6 bg-slate-900/70 p-1.5 rounded-2xl border border-slate-800 shadow-md">
-          <div className="grid grid-cols-3 gap-1 sm:flex sm:items-center sm:gap-1.5">
+          <div className={`grid gap-1 sm:flex sm:items-center sm:gap-1.5 ${canAccessHistory ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
             <button
               onClick={() => setActiveTab('carga')}
               className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm transition text-center ${
@@ -610,10 +728,42 @@ export default function App() {
                 {config.tiendas.length}
               </span>
             </button>
+
+            {/* Pestaña Historial Exclusiva para Elizabeth y Admin */}
+            {canAccessHistory && (
+              <button
+                onClick={() => setActiveTab('historial')}
+                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm transition text-center ${
+                  activeTab === 'historial'
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                    : 'text-purple-300/80 hover:text-white hover:bg-purple-950/40 border border-purple-900/30'
+                }`}
+                title="Historial de todos los registros cargados (Solo Admin y Elizabeth)"
+              >
+                <span className="text-sm sm:text-base">📜</span>
+                <span className="truncate">Historial</span>
+                {allCargas.length > 0 && (
+                  <span className="hidden lg:inline text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-950 border border-purple-800 text-purple-200">
+                    {allCargas.length}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
-        {activeTab === 'kanban' ? (
+        {activeTab === 'historial' && canAccessHistory ? (
+          <HistoryRecordsSection
+            cargas={allCargas}
+            isLoading={isLoadingAllCargas}
+            onRefresh={loadAllCargas}
+            onDeleteRecord={handleDeleteCargaRecord}
+            onUpdateRecord={handleUpdateCargaRecord}
+            supervisoras={config.supervisoras}
+            tiendas={config.tiendas}
+            currentUser={currentUser}
+          />
+        ) : activeTab === 'kanban' ? (
           <SupervisorKanbanBoard
             config={config}
             currentUser={currentUser}
@@ -673,6 +823,17 @@ export default function App() {
                     onChange={setSelectedMonth}
                   />
                 )}
+
+                {/* Botón Exportar PDF de Ranking / Métricas */}
+                <button
+                  type="button"
+                  onClick={handleExportRankingPdf}
+                  className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-rose-600/25 active:scale-95"
+                  title="Descargar informe ejecutivo en PDF de ranking o métricas"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Exportar PDF</span>
+                </button>
               </div>
             </div>
 
@@ -694,6 +855,7 @@ export default function App() {
                   supervisorasMonthly={monthlyData.supervisorasMonthly}
                   daysMonthly={monthlyData.daysMonthly}
                   isAllSupervisors={selectedSup === ALL_SUP}
+                  onExportMonthPdf={handleExportRankingPdf}
                   onExportMonthCsv={handleExportMonthCsv}
                 />
               )
@@ -718,14 +880,14 @@ export default function App() {
                   <UserCheck className="w-4 h-4 text-amber-400" />
                   <span>Supervisora a Cargo</span>
                 </span>
-                {currentUser?.email !== 'admin@migusto.com.ar' && currentUser?.supId !== '__all' && (
+                {!isUserAdmin(currentUser) && (
                   <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                     Asignada por sesión
                   </span>
                 )}
               </label>
 
-              {currentUser?.email === 'admin@migusto.com.ar' || currentUser?.supId === '__all' ? (
+              {isUserAdmin(currentUser) ? (
                 /* Admin: Can select any supervisor or all stores */
                 <select
                   value={selectedSup}
