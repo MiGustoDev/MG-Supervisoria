@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Lock, Mail, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 import { authenticateSupervisorAsync } from '../lib/auth';
 import { gsap, useGSAP } from '../lib/animations';
+import { Footer } from './Footer';
 
 export function LoginScreen({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -216,11 +217,7 @@ export function LoginScreen({ onLoginSuccess }) {
       </div>
 
       {/* Screen Footer */}
-      <footer className="w-full border-t border-slate-800/60 py-4 px-4 text-center relative z-10 bg-slate-950/40 backdrop-blur-sm">
-        <p className="text-xs text-slate-500 font-medium tracking-wide">
-          © Desarrollado por el Departamento de Sistemas de Mi Gusto | Todos los derechos reservados.
-        </p>
-      </footer>
+      <Footer />
     </div>
   );
 }

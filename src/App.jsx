@@ -13,6 +13,7 @@ import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { CustomDatePicker } from './components/CustomDatePicker';
 import { CustomMonthPicker } from './components/CustomMonthPicker';
 import { CustomSupervisorSelect } from './components/CustomSupervisorSelect';
+import { Footer } from './components/Footer';
 import { api } from './lib/api';
 import { getSupabaseCredentials } from './lib/supabase';
 import { getStoredSession, clearSession, isUserAdmin, canUserAccessHistory } from './lib/auth';
@@ -31,7 +32,7 @@ import {
   pad,
   formatThousands,
 } from './lib/formatters';
-import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy, FileText } from 'lucide-react';
+import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy, FileText, Save, RotateCcw } from 'lucide-react';
 import { animateTabEnter, animateToastEnter, gsap } from './lib/animations';
 
 const LS_SELECTED_SUP = 'mg_active_supervisora';
@@ -673,7 +674,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-24">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between">
       {/* Top Brand Navigation */}
       <Header
         currentUser={currentUser}
@@ -691,7 +692,7 @@ export default function App() {
       />
 
       {/* Main Container */}
-      <main className="max-w-[1600px] mx-auto px-2 sm:px-6 lg:px-8 pt-3 sm:pt-6">
+      <main className="max-w-[1600px] w-full mx-auto px-2 sm:px-6 lg:px-8 pt-3 sm:pt-6 flex-1 pb-16">
         {/* Toast notifications */}
         {toastMessage && (
           <div
@@ -1039,53 +1040,67 @@ export default function App() {
 
         {/* Action buttons toolbar positioned directly below the store sheet */}
         {activeStores.length > 0 && (
-          <div className="mt-6 bg-slate-900/60 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xl">
-            <div className="flex flex-col gap-3 max-w-xl mx-auto">
+          <div className="mt-6 bg-slate-900/60 border border-slate-800 rounded-3xl p-3.5 sm:p-5 shadow-xl">
+            <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-4xl mx-auto items-stretch">
               {/* Primary Save Button */}
               <button
+                type="button"
                 onClick={handleSaveDay}
                 disabled={isSaving || dirtyStoreIds.size === 0}
-                className={`w-full py-3.5 px-6 rounded-2xl font-black text-sm sm:text-base transition flex items-center justify-center gap-2 shadow-xl ${
+                className={`py-3 px-2 sm:px-4 rounded-2xl font-black text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 shadow-xl ${
                   dirtyStoreIds.size > 0
-                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/25 active:scale-[0.98]'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/25 active:scale-95 cursor-pointer'
+                    : 'bg-slate-800/80 text-slate-500 border border-slate-700/50 cursor-not-allowed opacity-60'
                 }`}
+                title={dirtyStoreIds.size > 0 ? `Guardar ${dirtyStoreIds.size} cambios` : 'No hay cambios para guardar'}
               >
-                {isSaving
-                  ? 'Guardando cambios...'
-                  : dirtyStoreIds.size > 0
-                  ? `Guardar cambios (${dirtyStoreIds.size})`
-                  : 'Guardar día'}
+                <Save className="w-4 h-4 shrink-0" />
+                <span className="truncate">
+                  {isSaving
+                    ? 'Guardando...'
+                    : dirtyStoreIds.size > 0
+                    ? `Guardar (${dirtyStoreIds.size})`
+                    : 'Guardar'}
+                </span>
               </button>
 
-              {/* Secondary Export & Share Buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={handleCopyWhatsApp}
-                  className="w-full py-3 px-4 rounded-2xl bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-800/70 text-emerald-400 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-emerald-950/30"
-                >
-                  <span className="text-base">📱</span>
-                  <span>WhatsApp</span>
-                </button>
+              {/* Discard changes button (always visible, disabled if no dirty stores) */}
+              <button
+                type="button"
+                onClick={handleDiscardChanges}
+                disabled={dirtyStoreIds.size === 0 || isSaving}
+                className={`py-3 px-2 sm:px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 shadow-md ${
+                  dirtyStoreIds.size > 0
+                    ? 'bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/70 text-rose-300 hover:text-white shadow-rose-950/30 active:scale-95 cursor-pointer'
+                    : 'bg-slate-900/40 border border-slate-800/60 text-slate-600 cursor-not-allowed opacity-50'
+                }`}
+                title={dirtyStoreIds.size > 0 ? 'Descartar cambios no guardados' : 'Sin cambios pendientes para descartar'}
+              >
+                <RotateCcw className="w-4 h-4 shrink-0" />
+                <span className="truncate">Descartar</span>
+              </button>
 
-                <button
-                  onClick={handleExportDayCsv}
-                  className="w-full py-3 px-4 rounded-2xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-black/40"
-                >
-                  <span className="text-base">📊</span>
-                  <span>Excel</span>
-                </button>
-              </div>
+              {/* WhatsApp Share Button */}
+              <button
+                type="button"
+                onClick={handleCopyWhatsApp}
+                className="py-3 px-2 sm:px-4 rounded-2xl bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-800/70 text-emerald-400 font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-md shadow-emerald-950/30 cursor-pointer"
+                title="Copiar resumen para WhatsApp"
+              >
+                <span className="text-base shrink-0 leading-none">📱</span>
+                <span className="truncate">WhatsApp</span>
+              </button>
 
-              {/* Discard changes button */}
-              {dirtyStoreIds.size > 0 && (
-                <button
-                  onClick={handleDiscardChanges}
-                  className="w-full py-2 text-rose-400 hover:text-rose-300 text-xs font-bold transition text-center"
-                >
-                  Descartar
-                </button>
-              )}
+              {/* Excel Export Button */}
+              <button
+                type="button"
+                onClick={handleExportDayCsv}
+                className="py-3 px-2 sm:px-4 rounded-2xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-md shadow-black/40 cursor-pointer"
+                title="Exportar a CSV / Excel"
+              >
+                <span className="text-base shrink-0 leading-none">📊</span>
+                <span className="truncate">Excel</span>
+              </button>
             </div>
           </div>
         )}
@@ -1093,6 +1108,9 @@ export default function App() {
         )}
         </div>
       </main>
+
+      {/* Screen Footer */}
+      <Footer />
 
       {/* Database Modal */}
       <DatabaseModal
