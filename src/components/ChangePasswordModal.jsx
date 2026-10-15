@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Lock, Eye, EyeOff, Check, AlertCircle, X, ShieldCheck } from 'lucide-react';
 import { updateUserPassword } from '../lib/auth';
-import { animateModalEnter } from '../lib/animations';
+import { animateModalEnter, animateModalExit } from '../lib/animations';
 
 export function ChangePasswordModal({ currentUser, isOpen, onClose }) {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -21,6 +21,14 @@ export function ChangePasswordModal({ currentUser, isOpen, onClose }) {
       animateModalEnter(modalRef.current, backdropRef.current);
     }
   }, [isOpen]);
+
+  const handleClose = () => {
+    if (modalRef.current && backdropRef.current) {
+      animateModalExit(modalRef.current, backdropRef.current, onClose);
+    } else {
+      onClose();
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -79,8 +87,8 @@ export function ChangePasswordModal({ currentUser, isOpen, onClose }) {
       >
         {/* Close button */}
         <button
-          onClick={onClose}
-          className="absolute right-4 top-4 w-8 h-8 rounded-full bg-slate-800/80 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition"
+          onClick={handleClose}
+          className="absolute right-4 top-4 w-8 h-8 rounded-full bg-slate-800/80 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -188,19 +196,19 @@ export function ChangePasswordModal({ currentUser, isOpen, onClose }) {
 
           <div className="pt-2 flex items-center justify-end gap-2.5">
             <button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition"
-            >
-              Cancelar
-            </button>
-            <button
               type="submit"
               disabled={isLoading}
-              className="px-5 py-2.5 rounded-xl text-xs font-black text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-lg shadow-amber-500/20 transition disabled:opacity-50 flex items-center gap-1.5"
+              className="px-5 py-2.5 rounded-xl text-xs font-black text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-lg shadow-amber-500/20 transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer active:scale-95"
             >
               {isLoading ? 'Guardando...' : 'Actualizar contraseña'}
+            </button>
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer active:scale-95"
+            >
+              Cancelar
             </button>
           </div>
         </form>

@@ -25,14 +25,15 @@ import {
   FileText,
   Edit3,
   Save,
-  Check
+  Check,
+  ChevronDown
 } from 'lucide-react';
-import { ARS, INT, DEC, parseYmd, pad, parseCount, parseMoney, todayStr, formatThousands } from '../lib/formatters';
+import { ARS, INT, DEC, parseYmd, pad, parseCount, parseMoney, todayStr, formatThousands, MONTHF } from '../lib/formatters';
 import { exportHistoryPDF } from '../lib/pdfExport';
 import { canUserDeleteRecords, canUserEditRecords } from '../lib/auth';
 import { CustomDatePicker } from './CustomDatePicker';
 import { AnimatedNumber } from './AnimatedNumber';
-import { animateModalEnter, gsap, useGSAP } from '../lib/animations';
+import { animateModalEnter, animateModalExit, animatePopoverEnter, animatePopoverExit, gsap, useGSAP } from '../lib/animations';
 
 // Función para mostrar fecha en formato Día/Mes/Año (DD/MM/YYYY)
 function formatDMY(dateStr) {
@@ -42,6 +43,259 @@ function formatDMY(dateStr) {
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
   return dateStr;
+}
+
+function HistorySupervisorFilter({ value, onChange, supervisoras }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+  const popoverRef = useRef(null);
+
+  const isAll = value === 'todos';
+  const selectedSup = supervisoras.find((s) => s.id === value);
+
+  const closeDropdown = () => {
+    if (popoverRef.current) {
+      animatePopoverExit(popoverRef.current, () => setIsOpen(false));
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  const openDropdown = () => {
+    setIsOpen(true);
+  };
+
+  useEffect(() => {
+    if (isOpen && popoverRef.current) {
+      animatePopoverEnter(popoverRef.current);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        closeDropdown();
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => (isOpen ? closeDropdown() : openDropdown())}
+        className="bg-slate-950 border border-slate-800 hover:border-amber-500/50 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-200 font-bold flex items-center justify-between gap-2 cursor-pointer transition shadow-inner group min-w-[170px]"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          {isAll ? (
+            <span className="text-xs">🌟</span>
+          ) : (
+            <div
+              className={`w-5 h-5 rounded-md bg-gradient-to-br ${
+                selectedSup?.avatarColor || 'from-amber-500 to-orange-600'
+              } flex items-center justify-center font-extrabold text-white text-[10px] shrink-0`}
+            >
+              {selectedSup?.name?.charAt(0) || 'S'}
+            </div>
+          )}
+          <span className="truncate max-w-[130px] sm:max-w-[170px] text-left">
+            {isAll ? 'Todas las supervisoras' : selectedSup?.name || 'Supervisora'}
+          </span>
+        </div>
+        <ChevronDown
+          className={`w-3.5 h-3.5 text-slate-400 group-hover:text-amber-400 transition-transform duration-200 shrink-0 ${
+            isOpen ? 'rotate-180 text-amber-400' : ''
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          ref={popoverRef}
+          className="absolute top-full right-0 mt-2 z-50 min-w-[220px] bg-slate-900/95 border border-slate-700/80 rounded-2xl p-2 shadow-2xl backdrop-blur-xl origin-top max-h-72 overflow-y-auto"
+        >
+          {/* Todas las supervisoras */}
+          <button
+            type="button"
+            onClick={() => {
+              onChange('todos');
+              closeDropdown();
+            }}
+            className={`w-full flex items-center justify-between p-2 rounded-xl transition text-left cursor-pointer mb-1 ${
+              isAll
+                ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                : 'hover:bg-slate-800/80 text-slate-200 hover:text-white border border-transparent'
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs">🌟</span>
+              <span className="font-extrabold text-xs sm:text-sm truncate">Todas las supervisoras</span>
+            </div>
+            {isAll && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+          </button>
+
+          <div className="border-t border-slate-800 my-1" />
+
+          {supervisoras.map((s) => {
+            const isSelected = value === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  onChange(s.id);
+                  closeDropdown();
+                }}
+                className={`w-full flex items-center justify-between p-2 rounded-xl transition text-left cursor-pointer ${
+                  isSelected
+                    ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                    : 'hover:bg-slate-800/80 text-slate-200 hover:text-white border border-transparent'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div
+                    className={`w-5 h-5 rounded-md bg-gradient-to-br ${
+                      s.avatarColor || 'from-amber-500 to-orange-600'
+                    } flex items-center justify-center font-extrabold text-white text-[10px] shrink-0`}
+                  >
+                    {s.name.charAt(0)}
+                  </div>
+                  <span className="font-bold text-xs sm:text-sm truncate">{s.name}</span>
+                </div>
+                {isSelected && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HistoryMonthFilter({ value, onChange, availableMonths }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+  const popoverRef = useRef(null);
+
+  const isAll = value === 'todos';
+
+  const formatMonthLabel = (m) => {
+    if (m === 'todos') return 'Todos los meses';
+    try {
+      const d = parseYmd(m + '-01');
+      const str = MONTHF.format(d);
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    } catch {
+      return m;
+    }
+  };
+
+  const closeDropdown = () => {
+    if (popoverRef.current) {
+      animatePopoverExit(popoverRef.current, () => setIsOpen(false));
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  const openDropdown = () => {
+    setIsOpen(true);
+  };
+
+  useEffect(() => {
+    if (isOpen && popoverRef.current) {
+      animatePopoverEnter(popoverRef.current);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        closeDropdown();
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => (isOpen ? closeDropdown() : openDropdown())}
+        className="bg-slate-950 border border-slate-800 hover:border-amber-500/50 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-200 font-bold flex items-center justify-between gap-2 cursor-pointer transition shadow-inner group font-mono-numbers min-w-[150px]"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="truncate max-w-[120px] sm:max-w-[150px] text-left">
+            {formatMonthLabel(value)}
+          </span>
+        </div>
+        <ChevronDown
+          className={`w-3.5 h-3.5 text-slate-400 group-hover:text-amber-400 transition-transform duration-200 shrink-0 ${
+            isOpen ? 'rotate-180 text-amber-400' : ''
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          ref={popoverRef}
+          className="absolute top-full right-0 mt-2 z-50 min-w-[200px] bg-slate-900/95 border border-slate-700/80 rounded-2xl p-2 shadow-2xl backdrop-blur-xl origin-top max-h-72 overflow-y-auto font-mono-numbers"
+        >
+          {/* Todos los meses */}
+          <button
+            type="button"
+            onClick={() => {
+              onChange('todos');
+              closeDropdown();
+            }}
+            className={`w-full flex items-center justify-between p-2 rounded-xl transition text-left cursor-pointer mb-1 ${
+              isAll
+                ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                : 'hover:bg-slate-800/80 text-slate-200 hover:text-white border border-transparent'
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="font-extrabold text-xs sm:text-sm truncate">Todos los meses</span>
+            </div>
+            {isAll && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+          </button>
+
+          <div className="border-t border-slate-800 my-1" />
+
+          {availableMonths.map((m) => {
+            const isSelected = value === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => {
+                  onChange(m);
+                  closeDropdown();
+                }}
+                className={`w-full flex items-center justify-between p-2 rounded-xl transition text-left cursor-pointer ${
+                  isSelected
+                    ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                    : 'hover:bg-slate-800/80 text-slate-200 hover:text-white border border-transparent'
+                }`}
+              >
+                <span className="font-bold text-xs sm:text-sm truncate">{formatMonthLabel(m)}</span>
+                {isSelected && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function HistoryRecordsSection({
@@ -66,9 +320,39 @@ export function HistoryRecordsSection({
   const modalContentRef = useRef(null);
   const statsGridRef = useRef(null);
 
+  const handleCloseRecordModal = () => {
+    if (modalContentRef.current && modalBackdropRef.current) {
+      animateModalExit(modalContentRef.current, modalBackdropRef.current, () => {
+        setActiveRecord(null);
+        setIsEditing(false);
+      });
+    } else {
+      setActiveRecord(null);
+      setIsEditing(false);
+    }
+  };
+
   useEffect(() => {
     if (activeRecord && modalContentRef.current && modalBackdropRef.current) {
       animateModalEnter(modalContentRef.current, modalBackdropRef.current);
+
+      // Animate progress and chart bars incrementing
+      const timer = setTimeout(() => {
+        if (!modalContentRef.current) return;
+        const bars = modalContentRef.current.querySelectorAll('.gsap-modal-bar');
+        if (bars.length > 0) {
+          bars.forEach((b) => {
+            const targetW = b.getAttribute('data-target-width') || '100%';
+            gsap.fromTo(
+              b,
+              { width: '0%', opacity: 0.4 },
+              { width: targetW, opacity: 1, duration: 0.75, ease: 'power2.out' }
+            );
+          });
+        }
+      }, 40);
+
+      return () => clearTimeout(timer);
     }
   }, [activeRecord]);
 
@@ -257,10 +541,28 @@ export function HistoryRecordsSection({
   // Historial contextual para el detalle de la tienda activa
   const activeRecordHistory = useMemo(() => {
     if (!activeRecord) return [];
-    return cargas
-      .filter((c) => c.tiendaId === activeRecord.tiendaId)
+    const targetStoreId = activeRecord.tiendaId || activeRecord.tienda_id;
+    const targetStoreName = (activeRecord.tiendaNombre || '').trim().toLowerCase();
+
+    const list = (cargas || [])
+      .filter((c) => {
+        const cStoreId = c.tiendaId || c.tienda_id;
+        const cStoreName = (c.tiendaNombre || '').trim().toLowerCase();
+        if (targetStoreId && cStoreId && String(cStoreId) === String(targetStoreId)) {
+          return true;
+        }
+        if (targetStoreName && cStoreName && targetStoreName === cStoreName) {
+          return true;
+        }
+        return false;
+      })
       .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''))
       .slice(-10); // Últimos 10 registros
+
+    if (list.length === 0) {
+      return [activeRecord];
+    }
+    return list;
   }, [activeRecord, cargas]);
 
   // Promedios históricos de esa sucursal
@@ -308,10 +610,10 @@ export function HistoryRecordsSection({
   return (
     <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-200">
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-900/90 to-purple-950/30 border border-purple-900/40 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/10">
-            <History className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 shadow-sm">
+            <History className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
           </div>
           <div>
             <h2 className="text-base sm:text-xl font-black text-white tracking-tight">
@@ -339,7 +641,7 @@ export function HistoryRecordsSection({
             type="button"
             onClick={handleExportPdf}
             disabled={filteredRecords.length === 0}
-            className="flex items-center gap-1.5 px-4 py-2 bg-rose-600/90 hover:bg-rose-500 text-white text-xs sm:text-sm font-bold rounded-xl transition shadow-lg shadow-rose-600/25 active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 bg-rose-600/90 hover:bg-rose-500 text-white text-xs sm:text-sm font-bold rounded-xl transition shadow-lg shadow-rose-600/25 active:scale-95 disabled:opacity-50 cursor-pointer"
             title="Descargar informe ejecutivo en PDF con tablas y totales"
           >
             <FileText className="w-4 h-4" />
@@ -349,56 +651,144 @@ export function HistoryRecordsSection({
       </div>
 
       {/* KPI Stats Cards de los registros filtrados */}
-      <div ref={statsGridRef} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 font-mono-numbers">
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 relative overflow-hidden gsap-card">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold font-sans mb-1">
-            <span>Registros</span>
-            <Store className="w-4 h-4 text-purple-400" />
+      <div ref={statsGridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 font-mono-numbers">
+        {/* Registros */}
+        <div className="bg-slate-900/90 border border-slate-800/90 hover:border-amber-500/40 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between gsap-card shadow-xl group min-h-[175px]">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/20 shadow-sm shrink-0">
+                <Store className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 font-sans">
+                  Registros Totales
+                </p>
+                <p className="text-[10px] text-slate-500 font-sans">
+                  Cargas en base de datos
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-sans">
+              Historial
+            </span>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-white">
-            <AnimatedNumber value={filteredRecords.length} formatter={(v) => INT.format(v)} />
+
+          <div className="my-2">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+              <AnimatedNumber value={filteredRecords.length} formatter={(v) => INT.format(v)} />
+            </p>
           </div>
-          <div className="text-[10px] text-slate-500 font-sans mt-0.5">
-            de {cargas.length} totales en la base
+
+          <div className="text-[11px] text-slate-400 font-sans flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+            <span>Total en base</span>
+            <span className="font-bold text-amber-300 font-mono-numbers">
+              {cargas.length} registros
+            </span>
           </div>
         </div>
 
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 relative overflow-hidden gsap-card">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold font-sans mb-1">
-            <span>Venta Acumulada</span>
-            <DollarSign className="w-4 h-4 text-amber-400" />
+        {/* Venta Acumulada */}
+        <div className="bg-slate-900/90 border border-slate-800/90 hover:border-emerald-500/40 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between gsap-card shadow-xl group min-h-[175px]">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 shadow-sm shrink-0">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 font-sans">
+                  Venta Acumulada
+                </p>
+                <p className="text-[10px] text-slate-500 font-sans">
+                  Facturación de selección
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-sans">
+              Facturación
+            </span>
           </div>
-          <div className="text-lg sm:text-xl font-black text-emerald-400 truncate">
-            <AnimatedNumber value={totals.venta} formatter={(v) => ARS.format(v)} />
+
+          <div className="my-2">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-emerald-400 tracking-tight">
+              <AnimatedNumber value={totals.venta} formatter={(v) => ARS.format(v)} />
+            </p>
           </div>
-          <div className="text-[10px] text-slate-500 font-sans mt-0.5">
-            de la selección actual
+
+          <div className="text-[11px] text-slate-400 font-sans flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+            <span>Ticket promedio</span>
+            <span className="font-bold text-emerald-300 font-mono-numbers">
+              {totals.ticket ? <AnimatedNumber value={totals.ticket} formatter={(v) => ARS.format(v)} /> : '–'}
+            </span>
           </div>
         </div>
 
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 relative overflow-hidden gsap-card">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold font-sans mb-1">
-            <span>Comandas</span>
-            <Receipt className="w-4 h-4 text-sky-400" />
+        {/* Comandas */}
+        <div className="bg-slate-900/90 border border-slate-800/90 hover:border-blue-500/40 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between gsap-card shadow-xl group min-h-[175px]">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/20 shadow-sm shrink-0">
+                <Receipt className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 font-sans">
+                  Comandas Totales
+                </p>
+                <p className="text-[10px] text-slate-500 font-sans">
+                  Pedidos acumulados
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-sans">
+              Tickets
+            </span>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-white">
-            <AnimatedNumber value={totals.comandas} formatter={(v) => INT.format(v)} />
+
+          <div className="my-2">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+              <AnimatedNumber value={totals.comandas} formatter={(v) => INT.format(v)} />
+            </p>
           </div>
-          <div className="text-[10px] text-slate-500 font-sans mt-0.5">
-            Ticket prom: {ARS.format(totals.ticket)}
+
+          <div className="text-[11px] text-slate-400 font-sans flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+            <span>Ticket promedio</span>
+            <span className="font-bold text-blue-300 font-mono-numbers">
+              {totals.ticket ? ARS.format(totals.ticket) : '–'}
+            </span>
           </div>
         </div>
 
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 relative overflow-hidden gsap-card">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold font-sans mb-1">
-            <span>Empanadas</span>
-            <ShoppingBag className="w-4 h-4 text-rose-400" />
+        {/* Empanadas */}
+        <div className="bg-slate-900/90 border border-slate-800/90 hover:border-purple-500/40 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between gsap-card shadow-xl group min-h-[175px]">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/20 shadow-sm shrink-0">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 font-sans">
+                  Empanadas Totales
+                </p>
+                <p className="text-[10px] text-slate-500 font-sans">
+                  Unidades acumuladas
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-sans">
+              Empanadas
+            </span>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-white">
-            <AnimatedNumber value={totals.unidades} formatter={(v) => INT.format(v)} />
+
+          <div className="my-2">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-purple-300 tracking-tight">
+              <AnimatedNumber value={totals.unidades} formatter={(v) => INT.format(v)} />
+            </p>
           </div>
-          <div className="text-[10px] text-slate-500 font-sans mt-0.5">
-            {totals.unidPorComanda.toFixed(1)} unid. / comanda
+
+          <div className="text-[11px] text-slate-400 font-sans flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+            <span>Unidades por comanda</span>
+            <span className="font-bold text-purple-300 font-mono-numbers">
+              {totals.unidPorComanda ? `${totals.unidPorComanda.toFixed(1)} unid.` : '–'}
+            </span>
           </div>
         </div>
       </div>
@@ -412,12 +802,12 @@ export function HistoryRecordsSection({
             placeholder="Buscar por sucursal, supervisora o fecha (DD/MM/YYYY)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+            className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-sm p-1"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-sm p-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -425,33 +815,19 @@ export function HistoryRecordsSection({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Selector de Supervisora */}
-          <select
+          {/* Selector de Supervisora Custom */}
+          <HistorySupervisorFilter
             value={selectedSup}
-            onChange={(e) => setSelectedSup(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-300 font-medium focus:outline-none focus:border-purple-500"
-          >
-            <option value="todos">Todas las supervisoras</option>
-            {supervisoras.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedSup}
+            supervisoras={supervisoras}
+          />
 
-          {/* Selector de Mes */}
-          <select
+          {/* Selector de Mes Custom */}
+          <HistoryMonthFilter
             value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-300 font-medium focus:outline-none focus:border-purple-500 font-mono-numbers"
-          >
-            <option value="todos">Todos los meses</option>
-            {availableMonths.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedMonth}
+            availableMonths={availableMonths}
+          />
 
           {(searchTerm || selectedSup !== 'todos' || selectedMonth !== 'todos') && (
             <button
@@ -603,7 +979,7 @@ export function HistoryRecordsSection({
         >
           <div
             ref={modalContentRef}
-            className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]"
+            className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]"
           >
             {/* Header del Modal */}
             <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-800 bg-slate-950/60">
@@ -632,11 +1008,8 @@ export function HistoryRecordsSection({
 
               <button
                 type="button"
-                onClick={() => {
-                  setActiveRecord(null);
-                  setIsEditing(false);
-                }}
-                className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition"
+                onClick={handleCloseRecordModal}
+                className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -803,43 +1176,50 @@ export function HistoryRecordsSection({
                 /* MODO VISUALIZACIÓN: Tarjetas Principales del Día */
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5">
+                    <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3 sm:p-3.5">
                       <div className="text-[11px] font-sans text-slate-400 font-semibold mb-1 flex items-center justify-between">
                         <span>Venta Total</span>
                         <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
                       </div>
-                      <div className="text-base sm:text-lg font-black text-emerald-400 truncate">
-                        {ARS.format(activeRecord.venta)}
+                      <div className="text-sm sm:text-base md:text-lg font-black text-emerald-400 tracking-tight whitespace-nowrap">
+                        <AnimatedNumber value={activeRecord.venta} formatter={(v) => ARS.format(v)} />
                       </div>
                     </div>
 
-                    <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5">
+                    <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3 sm:p-3.5">
                       <div className="text-[11px] font-sans text-slate-400 font-semibold mb-1 flex items-center justify-between">
                         <span>Comandas</span>
                         <Receipt className="w-3.5 h-3.5 text-sky-400" />
                       </div>
-                      <div className="text-base sm:text-lg font-black text-white">
-                        {INT.format(activeRecord.comandas)}
+                      <div className="text-sm sm:text-base md:text-lg font-black text-white whitespace-nowrap">
+                        <AnimatedNumber value={activeRecord.comandas} formatter={(v) => INT.format(v)} />
                       </div>
                     </div>
 
-                    <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5">
+                    <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3 sm:p-3.5">
                       <div className="text-[11px] font-sans text-slate-400 font-semibold mb-1 flex items-center justify-between">
                         <span>Unidades</span>
                         <ShoppingBag className="w-3.5 h-3.5 text-rose-400" />
                       </div>
-                      <div className="text-base sm:text-lg font-black text-white">
-                        {INT.format(activeRecord.unidades)}
+                      <div className="text-sm sm:text-base md:text-lg font-black text-white whitespace-nowrap">
+                        <AnimatedNumber value={activeRecord.unidades} formatter={(v) => INT.format(v)} />
                       </div>
                     </div>
 
-                    <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5">
+                    <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3 sm:p-3.5">
                       <div className="text-[11px] font-sans text-slate-400 font-semibold mb-1 flex items-center justify-between">
                         <span>Ticket Prom.</span>
                         <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
                       </div>
-                      <div className="text-base sm:text-lg font-black text-amber-400 truncate">
-                        {activeRecord.comandas > 0 ? ARS.format(activeRecord.venta / activeRecord.comandas) : '-'}
+                      <div className="text-sm sm:text-base md:text-lg font-black text-amber-400 tracking-tight whitespace-nowrap">
+                        {activeRecord.comandas > 0 ? (
+                          <AnimatedNumber
+                            value={activeRecord.venta / activeRecord.comandas}
+                            formatter={(v) => ARS.format(v)}
+                          />
+                        ) : (
+                          '-'
+                        )}
                       </div>
                     </div>
                   </div>
@@ -884,13 +1264,22 @@ export function HistoryRecordsSection({
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-slate-400 font-sans">Empanadas por Comanda:</span>
                       <span className="font-bold text-white">
-                        {activeRecord.comandas > 0 ? (activeRecord.unidades / activeRecord.comandas).toFixed(1) : '0'} unid.
+                        {activeRecord.comandas > 0 ? (
+                          <AnimatedNumber
+                            value={activeRecord.unidades / activeRecord.comandas}
+                            decimals={1}
+                            formatter={(v) => `${Number(v).toFixed(1)} unid.`}
+                          />
+                        ) : (
+                          '0 unid.'
+                        )}
                       </span>
                     </div>
                     {/* Barra de progreso visual referencial (base 15 empanadas) */}
                     <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full"
+                        className="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full gsap-modal-bar transition-none"
+                        data-target-width={`${Math.min(100, (activeRecord.comandas > 0 ? (activeRecord.unidades / activeRecord.comandas) / 15 : 0) * 100)}%`}
                         style={{
                           width: `${Math.min(100, (activeRecord.comandas > 0 ? (activeRecord.unidades / activeRecord.comandas) / 15 : 0) * 100)}%`
                         }}
@@ -902,12 +1291,20 @@ export function HistoryRecordsSection({
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-slate-400 font-sans">Precio Prom. por Unidad:</span>
                       <span className="font-bold text-emerald-400">
-                        {activeRecord.unidades > 0 ? ARS.format(activeRecord.venta / activeRecord.unidades) : '-'}
+                        {activeRecord.unidades > 0 ? (
+                          <AnimatedNumber
+                            value={activeRecord.venta / activeRecord.unidades}
+                            formatter={(v) => ARS.format(v)}
+                          />
+                        ) : (
+                          '-'
+                        )}
                       </span>
                     </div>
                     <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"
+                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full gsap-modal-bar transition-none"
+                        data-target-width="85%"
                         style={{ width: '85%' }}
                       />
                     </div>
@@ -916,16 +1313,18 @@ export function HistoryRecordsSection({
               </div>
 
               {/* Gráfico Comparativo: Historial de los últimos días de esta sucursal */}
-              {activeRecordHistory.length > 1 && (
+              {activeRecordHistory.length > 0 && (
                 <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-slate-300 font-sans uppercase tracking-wider flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-emerald-400" />
-                      <span>Evolución de Venta Reciente ({activeRecordHistory.length} fechas)</span>
+                      <span>Evolución de Venta Reciente ({activeRecordHistory.length} {activeRecordHistory.length === 1 ? 'fecha' : 'fechas'})</span>
                     </h4>
                     {storeAverages && (
                       <span className="text-[11px] text-slate-400 font-sans">
-                        Promedio: <strong className="text-white">{ARS.format(storeAverages.avgVenta)}</strong>
+                        Promedio: <strong className="text-white">
+                          <AnimatedNumber value={storeAverages.avgVenta} formatter={(v) => ARS.format(v)} />
+                        </strong>
                       </span>
                     )}
                   </div>
@@ -945,18 +1344,22 @@ export function HistoryRecordsSection({
                               </span>
                               <div className="flex-1 bg-slate-900 h-6 rounded-lg overflow-hidden p-0.5 flex items-center">
                                 <div
-                                  className={`h-full rounded-md transition-all duration-500 flex items-center px-2 text-[10px] font-bold text-slate-950 truncate ${
+                                  className={`h-full rounded-md flex items-center px-2 text-[10px] font-bold text-slate-950 truncate gsap-modal-bar transition-none ${
                                     isCurrent
                                       ? 'bg-gradient-to-r from-amber-400 to-orange-500 shadow-md shadow-amber-500/20'
                                       : 'bg-gradient-to-r from-slate-700 to-slate-600 text-slate-300'
                                   }`}
+                                  data-target-width={`${pct}%`}
                                   style={{ width: `${pct}%` }}
                                 >
-                                  {ARS.format(item.venta)}
+                                  <AnimatedNumber value={item.venta} formatter={(v) => ARS.format(v)} />
                                 </div>
                               </div>
                               <span className="w-14 text-right text-[11px] text-slate-400 shrink-0">
-                                {INT.format(item.comandas)} cmd
+                                <AnimatedNumber
+                                  value={item.comandas}
+                                  formatter={(v) => `${INT.format(v)} cmd`}
+                                />
                               </span>
                             </div>
                           );
@@ -969,7 +1372,7 @@ export function HistoryRecordsSection({
             </div>
 
             {/* Footer de Acciones del Modal */}
-            <div className="px-6 py-3.5 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between">
+            <div className="px-6 py-3.5 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between gap-3">
               <div>
                 {canDelete && !isEditing && (
                   <button
@@ -977,9 +1380,9 @@ export function HistoryRecordsSection({
                     onClick={() => {
                       setConfirmDeleteRecord(activeRecord);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:text-white hover:bg-rose-950/40 border border-transparent hover:border-rose-900/50 transition"
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-rose-300 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/70 hover:border-rose-600 hover:text-white transition-all shadow-md shadow-rose-950/30 active:scale-95 cursor-pointer"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4 text-rose-400" />
                     <span>Eliminar</span>
                   </button>
                 )}
@@ -992,7 +1395,7 @@ export function HistoryRecordsSection({
                       type="button"
                       onClick={handleCancelEditing}
                       disabled={isSavingEdit}
-                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition"
+                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
                     >
                       Cancelar
                     </button>
@@ -1000,7 +1403,7 @@ export function HistoryRecordsSection({
                       type="button"
                       onClick={handleSaveEdit}
                       disabled={isSavingEdit}
-                      className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition shadow-lg shadow-amber-500/20 disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition shadow-lg shadow-amber-500/20 disabled:opacity-50 cursor-pointer"
                     >
                       {isSavingEdit ? (
                         <>
@@ -1021,7 +1424,7 @@ export function HistoryRecordsSection({
                       <button
                         type="button"
                         onClick={handleStartEditing}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition active:scale-95"
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition active:scale-95 cursor-pointer"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                         <span>Modificar registro</span>
@@ -1029,8 +1432,8 @@ export function HistoryRecordsSection({
                     )}
                     <button
                       type="button"
-                      onClick={() => setActiveRecord(null)}
-                      className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition"
+                      onClick={handleCloseRecordModal}
+                      className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition cursor-pointer"
                     >
                       Cerrar
                     </button>
