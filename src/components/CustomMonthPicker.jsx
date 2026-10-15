@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { animatePopoverEnter } from '../lib/animations';
 
 const MONTH_NAMES = [
   'Enero',
@@ -19,6 +20,13 @@ const MONTH_NAMES = [
 export function CustomMonthPicker({ value, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+  const popoverRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && popoverRef.current) {
+      animatePopoverEnter(popoverRef.current);
+    }
+  }, [isOpen]);
 
   // value is format 'YYYY-MM'
   const [currentYear, setCurrentYear] = useState(() => {
@@ -66,7 +74,10 @@ export function CustomMonthPicker({ value, onChange }) {
 
       {/* Popover Dropdown */}
       {isOpen && (
-        <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-slate-700 rounded-3xl p-4 sm:p-5 shadow-2xl shadow-black/95 backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+        <div
+          ref={popoverRef}
+          className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-slate-700 rounded-3xl p-4 sm:p-5 shadow-2xl shadow-black/95 backdrop-blur-2xl z-50 origin-top"
+        >
           {/* Year selector header */}
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
             <button

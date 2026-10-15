@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   History, 
   Search, 
@@ -31,6 +31,7 @@ import { ARS, INT, DEC, parseYmd, pad, parseCount, parseMoney, todayStr } from '
 import { exportHistoryPDF } from '../lib/pdfExport';
 import { canUserDeleteRecords, canUserEditRecords } from '../lib/auth';
 import { CustomDatePicker } from './CustomDatePicker';
+import { animateModalEnter, gsap, useGSAP } from '../lib/animations';
 
 // Función para mostrar fecha en formato Día/Mes/Año (DD/MM/YYYY)
 function formatDMY(dateStr) {
@@ -60,6 +61,15 @@ export function HistoryRecordsSection({
   
   // Registro seleccionado para modal de detalle interactivo con gráficos
   const [activeRecord, setActiveRecord] = useState(null);
+  const modalBackdropRef = useRef(null);
+  const modalContentRef = useRef(null);
+  const statsGridRef = useRef(null);
+
+  useEffect(() => {
+    if (activeRecord && modalContentRef.current && modalBackdropRef.current) {
+      animateModalEnter(modalContentRef.current, modalBackdropRef.current);
+    }
+  }, [activeRecord]);
 
   // Estados para modo de edición (solo administradores: admin, elizabeth, maria)
   const [isEditing, setIsEditing] = useState(false);
@@ -329,8 +339,8 @@ export function HistoryRecordsSection({
       </div>
 
       {/* KPI Stats Cards de los registros filtrados */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 font-mono-numbers">
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 relative overflow-hidden">
+      <div ref={statsGridRef} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 font-mono-numbers">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 relative overflow-hidden gsap-card">
           <div className="flex items-center justify-between text-slate-400 text-xs font-semibold font-sans mb-1">
             <span>Registros</span>
             <Store className="w-4 h-4 text-purple-400" />
@@ -343,7 +353,7 @@ export function HistoryRecordsSection({
           </div>
         </div>
 
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 relative overflow-hidden">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 relative overflow-hidden gsap-card">
           <div className="flex items-center justify-between text-slate-400 text-xs font-semibold font-sans mb-1">
             <span>Venta Acumulada</span>
             <DollarSign className="w-4 h-4 text-amber-400" />
@@ -356,7 +366,7 @@ export function HistoryRecordsSection({
           </div>
         </div>
 
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 relative overflow-hidden">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 relative overflow-hidden gsap-card">
           <div className="flex items-center justify-between text-slate-400 text-xs font-semibold font-sans mb-1">
             <span>Comandas</span>
             <Receipt className="w-4 h-4 text-sky-400" />
@@ -369,7 +379,7 @@ export function HistoryRecordsSection({
           </div>
         </div>
 
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 relative overflow-hidden">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 sm:p-4 relative overflow-hidden gsap-card">
           <div className="flex items-center justify-between text-slate-400 text-xs font-semibold font-sans mb-1">
             <span>Empanadas</span>
             <ShoppingBag className="w-4 h-4 text-rose-400" />
@@ -577,8 +587,14 @@ export function HistoryRecordsSection({
 
       {/* Modal Interactivo de Detalle, Edición y Gráficos */}
       {activeRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200">
+        <div
+          ref={modalBackdropRef}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md"
+        >
+          <div
+            ref={modalContentRef}
+            className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]"
+          >
             {/* Header del Modal */}
             <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-800 bg-slate-950/60">
               <div className="flex items-center gap-3">

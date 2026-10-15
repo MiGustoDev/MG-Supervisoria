@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, LogOut, ChevronDown, Check, ShieldCheck, Database, X, Lock } from 'lucide-react';
+import { animatePopoverEnter } from '../lib/animations';
 
 export function Header({
   currentUser,
@@ -10,6 +11,7 @@ export function Header({
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   // Close side menu / dropdown when clicking outside
   useEffect(() => {
@@ -20,6 +22,9 @@ export function Header({
     }
     if (isMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      if (dropdownRef.current) {
+        animatePopoverEnter(dropdownRef.current);
+      }
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuOpen]);
@@ -86,7 +91,10 @@ export function Header({
 
           {/* User Profile Dropdown / Side Menu */}
           {isMenuOpen && currentUser && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-slate-700/80 rounded-2xl p-3 shadow-2xl shadow-black/80 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 z-50">
+            <div
+              ref={dropdownRef}
+              className="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-slate-700/80 rounded-2xl p-3 shadow-2xl shadow-black/80 backdrop-blur-xl z-50 origin-top-right"
+            >
               {/* Profile Card Header */}
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 mb-2">
                 <div className="flex items-center gap-2.5">

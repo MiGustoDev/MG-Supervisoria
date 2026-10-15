@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Lock, Eye, EyeOff, Check, AlertCircle, X, ShieldCheck } from 'lucide-react';
 import { updateUserPassword } from '../lib/auth';
+import { animateModalEnter } from '../lib/animations';
 
 export function ChangePasswordModal({ currentUser, isOpen, onClose }) {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -12,6 +13,14 @@ export function ChangePasswordModal({ currentUser, isOpen, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const backdropRef = useRef(null);
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && modalRef.current && backdropRef.current) {
+      animateModalEnter(modalRef.current, backdropRef.current);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -60,8 +69,14 @@ export function ChangePasswordModal({ currentUser, isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 shadow-2xl relative">
+    <div
+      ref={backdropRef}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+    >
+      <div
+        ref={modalRef}
+        className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 shadow-2xl relative"
+      >
         {/* Close button */}
         <button
           onClick={onClose}

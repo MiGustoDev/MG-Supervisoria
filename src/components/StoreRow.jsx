@@ -44,11 +44,11 @@ export function StoreRow({
 
   return (
     <div
-      className={`relative p-4 sm:p-5 rounded-2xl border transition-all duration-200 ${
+      className={`store-row-item relative p-4 sm:p-5 rounded-2xl border gsap-card ${
         isDirty
-          ? 'bg-slate-900/90 border-amber-500/40 shadow-lg shadow-amber-500/5'
+          ? 'bg-slate-900/95 border-amber-500/50 shadow-xl shadow-amber-500/10'
           : savedData
-          ? 'bg-slate-900/50 border-slate-800/80 hover:border-slate-700/80'
+          ? 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700/90'
           : 'bg-slate-900/30 border-slate-800/40 opacity-90'
       }`}
     >

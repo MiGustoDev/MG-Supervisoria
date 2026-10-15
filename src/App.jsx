@@ -30,12 +30,16 @@ import {
   pad,
 } from './lib/formatters';
 import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy, FileText } from 'lucide-react';
+import { animateTabEnter, animateToastEnter, gsap } from './lib/animations';
 
 const LS_SELECTED_SUP = 'mg_active_supervisora';
 const ALL_SUP = '__all';
 
 export default function App() {
   const dateInputRef = useRef(null);
+  const tabContentRef = useRef(null);
+  const toastRef = useRef(null);
+  const storeGridRef = useRef(null);
   const [currentUser, setCurrentUser] = useState(() => getStoredSession());
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -84,6 +88,31 @@ export default function App() {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 4000);
   };
+
+  // GSAP: Animate tab transitions
+  useEffect(() => {
+    if (tabContentRef.current) {
+      animateTabEnter(tabContentRef.current);
+    }
+  }, [activeTab]);
+
+  // GSAP: Animate toast notification
+  useEffect(() => {
+    if (toastMessage && toastRef.current) {
+      animateToastEnter(toastRef.current);
+    }
+  }, [toastMessage]);
+
+  // GSAP: Animate store rows when supervisor or date changes
+  useEffect(() => {
+    if (activeTab === 'carga' && storeGridRef.current && storeGridRef.current.children.length > 0) {
+      gsap.fromTo(
+        storeGridRef.current.children,
+        { opacity: 0, y: 14, scale: 0.99 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.4, stagger: 0.035, ease: 'power2.out', clearProps: 'transform' }
+      );
+    }
+  }, [selectedSup, selectedFecha, activeTab]);
 
   // Permiso para ver u operar la pestaña de historial
   const canAccessHistory = canUserAccessHistory(currentUser);
@@ -664,7 +693,8 @@ export default function App() {
         {/* Toast notifications */}
         {toastMessage && (
           <div
-            className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 border animate-in slide-in-from-bottom duration-300 ${
+            ref={toastRef}
+            className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 border ${
               toastMessage.type === 'error'
                 ? 'bg-rose-950 text-rose-200 border-rose-800'
                 : toastMessage.type === 'info'
@@ -686,7 +716,7 @@ export default function App() {
           <div className={`grid gap-1 sm:flex sm:items-center sm:gap-1.5 ${canAccessHistory ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
             <button
               onClick={() => setActiveTab('carga')}
-              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm transition text-center ${
+              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center ${
                 activeTab === 'carga'
                   ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -698,7 +728,7 @@ export default function App() {
 
             <button
               onClick={() => setActiveTab('ranking')}
-              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm transition text-center ${
+              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center ${
                 activeTab === 'ranking'
                   ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -713,7 +743,7 @@ export default function App() {
 
             <button
               onClick={() => setActiveTab('kanban')}
-              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm transition text-center ${
+              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center ${
                 activeTab === 'kanban'
                   ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -733,7 +763,7 @@ export default function App() {
             {canAccessHistory && (
               <button
                 onClick={() => setActiveTab('historial')}
-                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm transition text-center ${
+                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center ${
                   activeTab === 'historial'
                     ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
                     : 'text-purple-300/80 hover:text-white hover:bg-purple-950/40 border border-purple-900/30'
@@ -751,6 +781,8 @@ export default function App() {
             )}
           </div>
         </div>
+
+        <div ref={tabContentRef} key={activeTab}>
 
         {activeTab === 'historial' && canAccessHistory ? (
           <HistoryRecordsSection
@@ -969,7 +1001,7 @@ export default function App() {
         />
 
         {/* Store Sheet */}
-        <div className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div ref={storeGridRef} className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-4">
           {!selectedSup ? (
             <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
               <p className="text-base font-semibold text-white mb-1">
@@ -1062,6 +1094,7 @@ export default function App() {
         )}
           </>
         )}
+        </div>
       </main>
 
       {/* Database Modal */}

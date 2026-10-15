@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ARS, INT, DEC, fmtDay } from '../lib/formatters';
 import { CustomMonthPicker } from './CustomMonthPicker';
 import { Calendar, DollarSign, Receipt, ShoppingBag, Target, FileText } from 'lucide-react';
+import { gsap, useGSAP } from '../lib/animations';
 
 export function MonthlyDashboard({
   month,
@@ -14,6 +15,25 @@ export function MonthlyDashboard({
   onExportMonthPdf,
   onExportMonthCsv,
 }) {
+  const kpiGridRef = useRef(null);
+  const storesTableRef = useRef(null);
+
+  useGSAP(() => {
+    if (kpiGridRef.current) {
+      gsap.fromTo(
+        kpiGridRef.current.children,
+        { opacity: 0, y: 12, scale: 0.98 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.06, ease: 'power2.out', clearProps: 'transform' }
+      );
+    }
+    if (storesTableRef.current && storesTableRef.current.children.length > 0) {
+      gsap.fromTo(
+        storesTableRef.current.children,
+        { opacity: 0, x: -8 },
+        { opacity: 1, x: 0, duration: 0.35, stagger: 0.02, ease: 'power2.out', clearProps: 'transform' }
+      );
+    }
+  }, [month, storesMonthly.length]);
   return (
     <div className="space-y-6 mt-12 pt-8 border-t border-slate-800">
       {/* Top Header */}
@@ -36,9 +56,9 @@ export function MonthlyDashboard({
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 font-mono-numbers">
+      <div ref={kpiGridRef} className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 font-mono-numbers">
         {/* Venta Acumulada */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group gsap-card">
           <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition" />
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
@@ -57,7 +77,7 @@ export function MonthlyDashboard({
         </div>
 
         {/* Comandas Totales */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group gsap-card">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
               Comandas
@@ -75,7 +95,7 @@ export function MonthlyDashboard({
         </div>
 
         {/* Unidades Totales */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group gsap-card">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
               Unidades
@@ -93,7 +113,7 @@ export function MonthlyDashboard({
         </div>
 
         {/* Cumplimiento de Carga */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group gsap-card">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
               Cumplimiento
@@ -171,7 +191,7 @@ export function MonthlyDashboard({
                 <th className="py-3 px-4 text-right">Unid./Comanda</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50">
+            <tbody ref={storesTableRef} className="divide-y divide-slate-800/50">
               {storesMonthly.map((store, idx) => (
                 <tr key={store.id} className="hover:bg-slate-800/30 transition">
                   <td className="py-3.5 px-4 text-center font-bold">
