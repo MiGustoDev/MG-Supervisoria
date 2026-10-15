@@ -27,10 +27,11 @@ import {
   Save,
   Check
 } from 'lucide-react';
-import { ARS, INT, DEC, parseYmd, pad, parseCount, parseMoney, todayStr } from '../lib/formatters';
+import { ARS, INT, DEC, parseYmd, pad, parseCount, parseMoney, todayStr, formatThousands } from '../lib/formatters';
 import { exportHistoryPDF } from '../lib/pdfExport';
 import { canUserDeleteRecords, canUserEditRecords } from '../lib/auth';
 import { CustomDatePicker } from './CustomDatePicker';
+import { AnimatedNumber } from './AnimatedNumber';
 import { animateModalEnter, gsap, useGSAP } from '../lib/animations';
 
 // Función para mostrar fecha en formato Día/Mes/Año (DD/MM/YYYY)
@@ -97,9 +98,9 @@ export function HistoryRecordsSection({
       tiendaId: record.tiendaId || '',
       supervisoraId: record.supervisoraId || '',
       fecha: record.fecha || '',
-      comandas: String(record.comandas || ''),
-      venta: String(record.venta || ''),
-      unidades: String(record.unidades || ''),
+      comandas: record.comandas ? formatThousands(record.comandas) : '',
+      venta: record.venta ? formatThousands(record.venta) : '',
+      unidades: record.unidades ? formatThousands(record.unidades) : '',
       notas: record.notas || '',
     });
   };
@@ -110,13 +111,22 @@ export function HistoryRecordsSection({
       tiendaId: activeRecord.tiendaId || '',
       supervisoraId: activeRecord.supervisoraId || '',
       fecha: activeRecord.fecha || '',
-      comandas: String(activeRecord.comandas || ''),
-      venta: String(activeRecord.venta || ''),
-      unidades: String(activeRecord.unidades || ''),
+      comandas: activeRecord.comandas ? formatThousands(activeRecord.comandas) : '',
+      venta: activeRecord.venta ? formatThousands(activeRecord.venta) : '',
+      unidades: activeRecord.unidades ? formatThousands(activeRecord.unidades) : '',
       notas: activeRecord.notas || '',
     });
     setEditError('');
     setIsEditing(true);
+  };
+
+  const handleNumericEditChange = (field, raw) => {
+    if (!raw.trim()) {
+      setEditValues((prev) => ({ ...prev, [field]: '' }));
+      return;
+    }
+    const digits = raw.replace(/\D/g, '');
+    setEditValues((prev) => ({ ...prev, [field]: formatThousands(digits) }));
   };
 
   const handleCancelEditing = () => {
@@ -346,7 +356,7 @@ export function HistoryRecordsSection({
             <Store className="w-4 h-4 text-purple-400" />
           </div>
           <div className="text-xl sm:text-2xl font-black text-white">
-            {INT.format(filteredRecords.length)}
+            <AnimatedNumber value={filteredRecords.length} formatter={(v) => INT.format(v)} />
           </div>
           <div className="text-[10px] text-slate-500 font-sans mt-0.5">
             de {cargas.length} totales en la base
@@ -359,7 +369,7 @@ export function HistoryRecordsSection({
             <DollarSign className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-lg sm:text-xl font-black text-emerald-400 truncate">
-            {ARS.format(totals.venta)}
+            <AnimatedNumber value={totals.venta} formatter={(v) => ARS.format(v)} />
           </div>
           <div className="text-[10px] text-slate-500 font-sans mt-0.5">
             de la selección actual
@@ -372,7 +382,7 @@ export function HistoryRecordsSection({
             <Receipt className="w-4 h-4 text-sky-400" />
           </div>
           <div className="text-xl sm:text-2xl font-black text-white">
-            {INT.format(totals.comandas)}
+            <AnimatedNumber value={totals.comandas} formatter={(v) => INT.format(v)} />
           </div>
           <div className="text-[10px] text-slate-500 font-sans mt-0.5">
             Ticket prom: {ARS.format(totals.ticket)}
@@ -385,7 +395,7 @@ export function HistoryRecordsSection({
             <ShoppingBag className="w-4 h-4 text-rose-400" />
           </div>
           <div className="text-xl sm:text-2xl font-black text-white">
-            {INT.format(totals.unidades)}
+            <AnimatedNumber value={totals.unidades} formatter={(v) => INT.format(v)} />
           </div>
           <div className="text-[10px] text-slate-500 font-sans mt-0.5">
             {totals.unidPorComanda.toFixed(1)} unid. / comanda
@@ -724,7 +734,7 @@ export function HistoryRecordsSection({
                         type="text"
                         inputMode="numeric"
                         value={editValues.comandas}
-                        onChange={(e) => setEditValues((prev) => ({ ...prev, comandas: e.target.value }))}
+                        onChange={(e) => handleNumericEditChange('comandas', e.target.value)}
                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white font-mono font-bold text-base focus:border-amber-400 focus:outline-none"
                         placeholder="ej. 850"
                       />
@@ -740,7 +750,7 @@ export function HistoryRecordsSection({
                         type="text"
                         inputMode="numeric"
                         value={editValues.venta}
-                        onChange={(e) => setEditValues((prev) => ({ ...prev, venta: e.target.value }))}
+                        onChange={(e) => handleNumericEditChange('venta', e.target.value)}
                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-emerald-400 font-mono font-bold text-base focus:border-emerald-400 focus:outline-none"
                         placeholder="ej. 528244"
                       />
@@ -756,7 +766,7 @@ export function HistoryRecordsSection({
                         type="text"
                         inputMode="numeric"
                         value={editValues.unidades}
-                        onChange={(e) => setEditValues((prev) => ({ ...prev, unidades: e.target.value }))}
+                        onChange={(e) => handleNumericEditChange('unidades', e.target.value)}
                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-white font-mono font-bold text-base focus:border-rose-400 focus:outline-none"
                         placeholder="ej. 1025"
                       />

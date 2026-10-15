@@ -69,11 +69,53 @@ export function animateModalEnter(contentRef, backdropRef) {
  */
 export function animatePopoverEnter(target) {
   if (!target) return;
-  gsap.fromTo(
+  return gsap.fromTo(
     target,
     { opacity: 0, scale: 0.96, y: -6 },
     { opacity: 1, scale: 1, y: 0, duration: 0.24, ease: GSAP_EASE.softBack, clearProps: 'transform' }
   );
+}
+
+/**
+ * Animate popover / dropdown exit smoothly before unmounting
+ * @param {HTMLElement} target 
+ * @param {Function} onComplete 
+ */
+export function animatePopoverExit(target, onComplete) {
+  if (!target) {
+    if (onComplete) onComplete();
+    return;
+  }
+  return gsap.to(target, {
+    opacity: 0,
+    scale: 0.96,
+    y: -6,
+    duration: 0.18,
+    ease: 'power2.in',
+    onComplete: () => {
+      if (onComplete) onComplete();
+    },
+  });
+}
+
+/**
+ * Animate modal exit smoothly before closing
+ * @param {HTMLElement} contentRef 
+ * @param {HTMLElement} backdropRef 
+ * @param {Function} onComplete 
+ */
+export function animateModalExit(contentRef, backdropRef, onComplete) {
+  const tl = gsap.timeline({
+    onComplete: () => {
+      if (onComplete) onComplete();
+    },
+  });
+  if (contentRef) {
+    tl.to(contentRef, { opacity: 0, scale: 0.95, y: 10, duration: 0.2, ease: 'power2.in' });
+  }
+  if (backdropRef) {
+    tl.to(backdropRef, { opacity: 0, duration: 0.2, ease: 'power2.in' }, '-=0.15');
+  }
 }
 
 /**
@@ -101,3 +143,4 @@ export function animateToastEnter(target) {
     { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: GSAP_EASE.softBack, clearProps: 'transform' }
   );
 }
+

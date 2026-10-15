@@ -12,6 +12,7 @@ import { HistoryRecordsSection } from './components/HistoryRecordsSection';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { CustomDatePicker } from './components/CustomDatePicker';
 import { CustomMonthPicker } from './components/CustomMonthPicker';
+import { CustomSupervisorSelect } from './components/CustomSupervisorSelect';
 import { api } from './lib/api';
 import { getSupabaseCredentials } from './lib/supabase';
 import { getStoredSession, clearSession, isUserAdmin, canUserAccessHistory } from './lib/auth';
@@ -28,6 +29,7 @@ import {
   MONTHF,
   parseYmd,
   pad,
+  formatThousands,
 } from './lib/formatters';
 import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy, FileText } from 'lucide-react';
 import { animateTabEnter, animateToastEnter, gsap } from './lib/animations';
@@ -139,9 +141,9 @@ export default function App() {
           if (!dirtyStoreIds.has(t.id)) {
             const saved = data[t.id];
             next[t.id] = {
-              rc: saved ? String(saved.comandas) : '',
-              rv: saved ? String(saved.venta) : '',
-              ru: saved ? String(saved.unidades) : '',
+              rc: saved && saved.comandas ? formatThousands(saved.comandas) : '',
+              rv: saved && saved.venta ? formatThousands(saved.venta) : '',
+              ru: saved && saved.unidades ? formatThousands(saved.unidades) : '',
             };
           }
         });
@@ -921,27 +923,22 @@ export default function App() {
 
               {isUserAdmin(currentUser) ? (
                 /* Admin: Can select any supervisor or all stores */
-                <select
+                <CustomSupervisorSelect
                   value={selectedSup}
-                  onChange={(e) => {
+                  onChange={(newSup) => {
                     if (dirtyStoreIds.size > 0) {
                       if (!confirm('Tenés cambios sin guardar. ¿Deseas descartarlos para cambiar de supervisora?')) {
                         return;
                       }
                       setDirtyStoreIds(new Set());
                     }
-                    setSelectedSup(e.target.value);
-                    localStorage.setItem(LS_SELECTED_SUP, e.target.value);
+                    setSelectedSup(newSup);
+                    localStorage.setItem(LS_SELECTED_SUP, newSup);
                   }}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-white font-bold text-base focus:outline-none focus:border-amber-500 shadow-inner"
-                >
-                  <option value={ALL_SUP}>🌟 Todas las tiendas (Vista General)</option>
-                  {config.supervisoras.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                  supervisoras={config.supervisoras}
+                  tiendas={config.tiendas}
+                  allSupValue={ALL_SUP}
+                />
               ) : (
                 /* Supervisor: Locked strictly to their own account */
                 <div className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3 text-white font-bold text-base shadow-inner flex items-center justify-between">

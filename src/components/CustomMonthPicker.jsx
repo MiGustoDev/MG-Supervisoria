@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { animatePopoverEnter } from '../lib/animations';
+import { animatePopoverEnter, animatePopoverExit } from '../lib/animations';
 
 const MONTH_NAMES = [
   'Enero',
@@ -21,6 +21,16 @@ export function CustomMonthPicker({ value, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
   const popoverRef = useRef(null);
+
+  const closeDropdown = () => {
+    if (popoverRef.current) {
+      animatePopoverExit(popoverRef.current, () => {
+        setIsOpen(false);
+      });
+    } else {
+      setIsOpen(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen && popoverRef.current) {
@@ -43,7 +53,7 @@ export function CustomMonthPicker({ value, onChange }) {
   useEffect(() => {
     function handleClickOutside(e) {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsOpen(false);
+        closeDropdown();
       }
     }
     if (isOpen) {
@@ -55,7 +65,7 @@ export function CustomMonthPicker({ value, onChange }) {
   const handleSelectMonth = (monthIndex) => {
     const formatted = `${currentYear}-${String(monthIndex + 1).padStart(2, '0')}`;
     onChange(formatted);
-    setIsOpen(false);
+    closeDropdown();
   };
 
   const displayText = `${MONTH_NAMES[selectedMonthNum]} ${selectedYear}`;
@@ -65,7 +75,13 @@ export function CustomMonthPicker({ value, onChange }) {
       {/* Trigger button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (isOpen) {
+            closeDropdown();
+          } else {
+            setIsOpen(true);
+          }
+        }}
         className="flex items-center gap-2 bg-slate-950 border border-slate-800 hover:border-amber-500/50 rounded-xl px-3.5 py-1.5 text-xs text-amber-400 font-extrabold focus:outline-none transition shadow-inner group"
       >
         <Calendar className="w-3.5 h-3.5 text-amber-400" />

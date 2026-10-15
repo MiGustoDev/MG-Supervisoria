@@ -1,6 +1,6 @@
 import React from 'react';
 import { Store, CheckCircle, AlertCircle, TrendingUp, Layers } from 'lucide-react';
-import { ARS, DEC, INT } from '../lib/formatters';
+import { ARS, DEC, INT, formatThousands } from '../lib/formatters';
 
 export function StoreRow({
   tienda,
@@ -10,6 +10,19 @@ export function StoreRow({
   isDirty,
 }) {
   const { rc, rv, ru, c, v, u, errs, complete } = values;
+
+  const handleNumericChange = (field, raw) => {
+    if (!raw.trim()) {
+      onChange(tienda.id, field, '');
+      return;
+    }
+    const digits = raw.replace(/\D/g, '');
+    if (!digits) {
+      onChange(tienda.id, field, '');
+      return;
+    }
+    onChange(tienda.id, field, formatThousands(digits));
+  };
 
   const hasComandas = !isNaN(c) && c > 0;
   const ticketPromedio = hasComandas && !isNaN(v) ? v / c : null;
@@ -102,7 +115,7 @@ export function StoreRow({
             inputMode="numeric"
             value={rc}
             placeholder="0"
-            onChange={(e) => onChange(tienda.id, 'c', e.target.value)}
+            onChange={(e) => handleNumericChange('c', e.target.value)}
             className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-white font-mono-numbers text-base sm:text-lg font-bold focus:outline-none transition ${
               rc && isNaN(c)
                 ? 'border-rose-500 text-rose-300 bg-rose-950/20'
@@ -118,10 +131,10 @@ export function StoreRow({
           </label>
           <input
             type="text"
-            inputMode="decimal"
+            inputMode="numeric"
             value={rv}
             placeholder="0"
-            onChange={(e) => onChange(tienda.id, 'v', e.target.value)}
+            onChange={(e) => handleNumericChange('v', e.target.value)}
             className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-white font-mono-numbers text-base sm:text-lg font-bold focus:outline-none transition ${
               rv && isNaN(v)
                 ? 'border-rose-500 text-rose-300 bg-rose-950/20'
@@ -140,7 +153,7 @@ export function StoreRow({
             inputMode="numeric"
             value={ru}
             placeholder="0"
-            onChange={(e) => onChange(tienda.id, 'u', e.target.value)}
+            onChange={(e) => handleNumericChange('u', e.target.value)}
             className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-white font-mono-numbers text-base sm:text-lg font-bold focus:outline-none transition ${
               ru && isNaN(u)
                 ? 'border-rose-500 text-rose-300 bg-rose-950/20'

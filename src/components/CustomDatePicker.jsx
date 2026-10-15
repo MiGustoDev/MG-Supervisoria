@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { pad, getYesterdayStr, todayStr } from '../lib/formatters';
-import { animatePopoverEnter } from '../lib/animations';
+import { animatePopoverEnter, animatePopoverExit } from '../lib/animations';
 
 const MONTH_NAMES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -14,6 +14,16 @@ export function CustomDatePicker({ value, onChange, maxDate, compact = false }) 
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
   const popoverRef = useRef(null);
+
+  const closeDropdown = () => {
+    if (popoverRef.current) {
+      animatePopoverExit(popoverRef.current, () => {
+        setIsOpen(false);
+      });
+    } else {
+      setIsOpen(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen && popoverRef.current) {
@@ -32,7 +42,7 @@ export function CustomDatePicker({ value, onChange, maxDate, compact = false }) 
   useEffect(() => {
     function handleClickOutside(e) {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsOpen(false);
+        closeDropdown();
       }
     }
     if (isOpen) {
@@ -116,7 +126,7 @@ export function CustomDatePicker({ value, onChange, maxDate, compact = false }) 
   const handleSelectDay = (dateStr) => {
     if (dateStr > maxLimit) return;
     onChange(dateStr);
-    setIsOpen(false);
+    closeDropdown();
   };
 
   const [y, m, d] = (value || yday).split('-');
@@ -126,7 +136,13 @@ export function CustomDatePicker({ value, onChange, maxDate, compact = false }) 
       {/* Trigger Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (isOpen) {
+            closeDropdown();
+          } else {
+            setIsOpen(true);
+          }
+        }}
         className={`w-full bg-slate-900 border border-slate-700 hover:border-amber-400 focus:border-amber-400 text-white font-mono-numbers flex items-center justify-between cursor-pointer transition group ${
           compact
             ? 'rounded-xl px-3 py-2 text-xs font-bold'

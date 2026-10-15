@@ -44,11 +44,21 @@ export const fmtDayLong = (s) => {
   return `${w.charAt(0).toUpperCase() + w.slice(1)} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 };
 
+export function formatThousands(raw) {
+  if (raw === null || raw === undefined || raw === '') return '';
+  const clean = String(raw).replace(/\D/g, '');
+  if (!clean) return '';
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 export function parseMoney(raw) {
   let s = String(raw || '').replace(/[\s$]/g, '');
   if (!s) return NaN;
-  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
-  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  if (s.includes(',')) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else {
+    s = s.replace(/\./g, '');
+  }
   return /^\d+(\.\d{1,2})?$/.test(s) ? Number(s) : NaN;
 }
 

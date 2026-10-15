@@ -3,6 +3,7 @@ import { ARS, INT, DEC, fmtDay } from '../lib/formatters';
 import { CustomMonthPicker } from './CustomMonthPicker';
 import { Calendar, DollarSign, Receipt, ShoppingBag, Target, FileText } from 'lucide-react';
 import { gsap, useGSAP } from '../lib/animations';
+import { AnimatedNumber } from './AnimatedNumber';
 
 export function MonthlyDashboard({
   month,
@@ -69,7 +70,7 @@ export function MonthlyDashboard({
             </div>
           </div>
           <div className="text-lg sm:text-2xl font-black text-white">
-            {ARS.format(kpis.venta)}
+            <AnimatedNumber value={kpis.venta} formatter={(v) => ARS.format(v)} />
           </div>
           <div className="text-xs text-slate-500 mt-1 font-sans">
             Ticket Promedio: {kpis.ticketPromedio ? ARS.format(kpis.ticketPromedio) : '–'}
@@ -87,7 +88,7 @@ export function MonthlyDashboard({
             </div>
           </div>
           <div className="text-lg sm:text-2xl font-black text-white">
-            {INT.format(kpis.comandas)}
+            <AnimatedNumber value={kpis.comandas} formatter={(v) => INT.format(v)} />
           </div>
           <div className="text-xs text-slate-500 mt-1 font-sans">
             {kpis.cargasRealizadas} cargas guardadas
@@ -105,7 +106,7 @@ export function MonthlyDashboard({
             </div>
           </div>
           <div className="text-lg sm:text-2xl font-black text-white">
-            {INT.format(kpis.unidades)}
+            <AnimatedNumber value={kpis.unidades} formatter={(v) => INT.format(v)} />
           </div>
           <div className="text-xs text-slate-500 mt-1 font-sans">
             {kpis.unidPorComanda ? `${DEC.format(kpis.unidPorComanda)} por comanda` : '–'}
@@ -123,7 +124,7 @@ export function MonthlyDashboard({
             </div>
           </div>
           <div className="text-lg sm:text-2xl font-black text-emerald-400">
-            {kpis.cumplimientoPorcentaje}%
+            <AnimatedNumber value={kpis.cumplimientoPorcentaje} formatter={(v) => `${v}%`} />
           </div>
           <div className="text-xs text-slate-500 mt-1 font-sans">
             {kpis.cargasRealizadas}/{kpis.cargasEsperadas} esperadas

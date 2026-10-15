@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { ARS, INT } from '../lib/formatters';
 import { CheckCircle2, TrendingUp, ShoppingBag, Receipt, DollarSign } from 'lucide-react';
 import { gsap, useGSAP } from '../lib/animations';
+import { AnimatedNumber } from './AnimatedNumber';
 
 export function DaySummaryBar({
   dateTitle,
@@ -23,8 +24,8 @@ export function DaySummaryBar({
     if (cardsContainerRef.current) {
       gsap.fromTo(
         cardsContainerRef.current.children,
-        { opacity: 0, y: -6, scale: 0.98 },
-        { opacity: 1, y: 0, scale: 1, duration: 0.4, stagger: 0.06, ease: 'power2.out' }
+        { opacity: 0, y: 12, scale: 0.98 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.08, ease: 'power2.out', clearProps: 'transform' }
       );
     }
   }, { scope: cardsContainerRef });
@@ -40,88 +41,165 @@ export function DaySummaryBar({
   }, [isAllLoaded]);
 
   return (
-    <>
-      {/* 1. STICKY TOP BAR: Title, Loaded progress and Total KPIs (Permanently fixed while scrolling) */}
+    <div className="space-y-4">
+      {/* 1. STICKY TOP BAR: Title & Loaded Progress */}
       <div className="sticky top-[53px] sm:top-[70px] z-20 bg-slate-950/95 backdrop-blur-md border-y border-slate-800/80 -mx-2 sm:-mx-6 lg:-mx-8 px-2.5 sm:px-6 lg:px-8 py-2.5 sm:py-3 shadow-2xl transition-all duration-300">
-        <div className="max-w-[1600px] mx-auto space-y-2.5">
+        <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-3">
           {/* Title & Progress */}
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h2 className="text-sm sm:text-base md:text-lg font-bold text-white flex items-center gap-2">
-                <span>{dateTitle}</span>
-                {isAllLoaded && (
-                  <span
-                    ref={badgeRef}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                  >
-                    <CheckCircle2 className="w-3 h-3" />
-                    100% Completo
-                  </span>
-                )}
-              </h2>
-            </div>
-
-            <div className="text-xs font-semibold shrink-0">
-              <span
-                className={
-                  totalStores === 0
-                    ? 'text-slate-500'
-                    : isAllLoaded
-                    ? 'text-emerald-400'
-                    : 'text-amber-400'
-                }
-              >
-                {loadedStores} de {totalStores} tiendas cargadas
-              </span>
-            </div>
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="text-sm sm:text-base md:text-lg font-bold text-white flex items-center gap-2 truncate">
+              <span>{dateTitle}</span>
+              {isAllLoaded && (
+                <span
+                  ref={badgeRef}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0"
+                >
+                  <CheckCircle2 className="w-3 h-3" />
+                  100% Completo
+                </span>
+              )}
+            </h2>
           </div>
 
-          {/* Live Total KPI Cards */}
-          <div ref={cardsContainerRef} className="grid grid-cols-3 gap-2 sm:gap-4 font-mono-numbers">
-            <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2 sm:p-2.5 flex items-center gap-2 sm:gap-3 gsap-lift">
-              <div className="p-1.5 sm:p-2 rounded-lg bg-blue-500/10 text-blue-400 hidden sm:block">
-                <Receipt className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                  Comandas
-                </p>
-                <p className="text-sm sm:text-base font-extrabold text-white">
-                  {INT.format(totals.c)}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2 sm:p-2.5 flex items-center gap-2 sm:gap-3 gsap-lift">
-              <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hidden sm:block">
-                <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                  Venta Total
-                </p>
-                <p className="text-sm sm:text-base font-extrabold text-emerald-400">
-                  {ARS.format(totals.v)}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-2 sm:p-2.5 flex items-center gap-2 sm:gap-3 gsap-lift">
-              <div className="p-1.5 sm:p-2 rounded-lg bg-purple-500/10 text-purple-400 hidden sm:block">
-                <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                  Unidades
-                </p>
-                <p className="text-sm sm:text-base font-extrabold text-purple-300">
-                  {INT.format(totals.u)}
-                </p>
-              </div>
+          <div className="text-xs font-semibold shrink-0 flex items-center gap-2">
+            <span
+              className={
+                totalStores === 0
+                  ? 'text-slate-500'
+                  : isAllLoaded
+                  ? 'text-emerald-400'
+                  : 'text-amber-400'
+              }
+            >
+              {loadedStores} de {totalStores} tiendas cargadas
+            </span>
+            <div className="w-16 sm:w-28 bg-slate-800 rounded-full h-1.5 overflow-hidden hidden sm:block">
+              <div
+                className={`h-full transition-all duration-500 rounded-full ${
+                  isAllLoaded ? 'bg-emerald-400' : 'bg-amber-500'
+                }`}
+                style={{
+                  width: `${totalStores > 0 ? Math.round((loadedStores / totalStores) * 100) : 0}%`,
+                }}
+              />
             </div>
           </div>
         </div>
       </div>
-    </>
+
+      {/* 2. DASHBOARD KPI CARDS: Same generous card size as StoreRow */}
+      <div
+        ref={cardsContainerRef}
+        className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 font-mono-numbers"
+      >
+        {/* Comandas */}
+        <div className="bg-slate-900/90 border border-slate-800/90 hover:border-blue-500/40 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between gsap-card shadow-xl group">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/20 shadow-sm shrink-0">
+                <Receipt className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 font-sans">
+                  Comandas Totales
+                </p>
+                <p className="text-[10px] text-slate-500 font-sans">
+                  Pedidos registrados hoy
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-sans">
+              Tickets
+            </span>
+          </div>
+
+          <div className="my-2">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+              <AnimatedNumber value={totals.c} formatter={(v) => INT.format(v)} />
+            </p>
+          </div>
+
+          <div className="text-[11px] text-slate-400 font-sans flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+            <span>Progreso de locales</span>
+            <span className="font-bold text-slate-300 font-mono-numbers">
+              {totalStores > 0 ? Math.round((loadedStores / totalStores) * 100) : 0}% completado
+            </span>
+          </div>
+        </div>
+
+        {/* Venta Total */}
+        <div className="bg-slate-900/90 border border-slate-800/90 hover:border-emerald-500/40 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between gsap-card shadow-xl group">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 shadow-sm shrink-0">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 font-sans">
+                  Venta Total Neta
+                </p>
+                <p className="text-[10px] text-slate-500 font-sans">
+                  Facturación consolidada
+                </p>
+              </div>
+            </div>
+            {totals.c > 0 && totals.v > 0 && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-sans flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" />
+                <span>TP {ARS.format(totals.v / totals.c)}</span>
+              </span>
+            )}
+          </div>
+
+          <div className="my-2">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-emerald-400 tracking-tight">
+              <AnimatedNumber value={totals.v} formatter={(v) => ARS.format(v)} />
+            </p>
+          </div>
+
+          <div className="text-[11px] text-slate-400 font-sans flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+            <span>Ticket promedio</span>
+            <span className="font-bold text-emerald-300 font-mono-numbers">
+              {totals.c > 0 ? ARS.format(totals.v / totals.c) : '–'}
+            </span>
+          </div>
+        </div>
+
+        {/* Unidades */}
+        <div className="bg-slate-900/90 border border-slate-800/90 hover:border-purple-500/40 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between gsap-card shadow-xl group">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/20 shadow-sm shrink-0">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 font-sans">
+                  Unidades Totales
+                </p>
+                <p className="text-[10px] text-slate-500 font-sans">
+                  Empanadas elaboradas
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-sans">
+              Empanadas
+            </span>
+          </div>
+
+          <div className="my-2">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-purple-300 tracking-tight">
+              <AnimatedNumber value={totals.u} formatter={(v) => INT.format(v)} />
+            </p>
+          </div>
+
+          <div className="text-[11px] text-slate-400 font-sans flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+            <span>Unidades por comanda</span>
+            <span className="font-bold text-purple-300 font-mono-numbers">
+              {totals.c > 0 ? `${(totals.u / totals.c).toFixed(1)} unid.` : '–'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
