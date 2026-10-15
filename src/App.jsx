@@ -181,9 +181,9 @@ export default function App() {
           if (!dirtyStoreIds.has(t.id)) {
             const saved = data[t.id];
             next[t.id] = {
-              rc: saved && saved.comandas ? formatThousands(saved.comandas) : '',
-              rv: saved && saved.venta ? formatThousands(saved.venta) : '',
-              ru: saved && saved.unidades ? formatThousands(saved.unidades) : '',
+              rc: saved && saved.comandas !== undefined && saved.comandas !== null ? formatThousands(saved.comandas) : '',
+              rv: saved && saved.venta !== undefined && saved.venta !== null ? formatThousands(saved.venta) : '',
+              ru: saved && saved.unidades !== undefined && saved.unidades !== null ? formatThousands(saved.unidades) : '',
             };
           }
         });
@@ -383,11 +383,15 @@ export default function App() {
 
     const bad = [];
     const itemsToSave = [];
+    const itemsToDelete = [];
 
     dirtyStoreIds.forEach((tid) => {
       const ev = evaluateRow(tid);
       if (ev.empty) {
-        // ignore
+        // Si la tienda ya tenía carga registrada en la BD y el usuario borró los datos, se elimina la carga
+        if (dayData[tid]) {
+          itemsToDelete.push(tid);
+        }
       } else if (ev.errs.length > 0 || !ev.complete) {
         bad.push(tid);
       } else {
@@ -411,27 +415,51 @@ export default function App() {
       return;
     }
 
-    if (itemsToSave.length === 0) {
+    if (itemsToSave.length === 0 && itemsToDelete.length === 0) {
       setDirtyStoreIds(new Set());
-      showToast('No había datos válidos que guardar.', 'info');
+      showToast('No había datos que guardar o modificar.', 'info');
       return;
     }
 
     setIsSaving(true);
     try {
-      await api.saveCargasDia(itemsToSave);
+      if (itemsToSave.length > 0) {
+        await api.saveCargasDia(itemsToSave);
+      }
+      if (itemsToDelete.length > 0) {
+        for (const tid of itemsToDelete) {
+          const existing = dayData[tid];
+          await api.deleteCargaRecord(existing?.id, tid, selectedFecha);
+        }
+      }
+
       setDirtyStoreIds(new Set());
       await loadDayData(selectedFecha);
       await loadMonthData(selectedMonth);
-      showToast(`¡Se guardaron ${itemsToSave.length} tiendas correctamente!`, 'success');
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.8 },
-      });
+      if (canAccessHistory) {
+        loadAllCargas();
+      }
+
+      let msg = '';
+      if (itemsToSave.length > 0 && itemsToDelete.length > 0) {
+        msg = `¡Se guardaron ${itemsToSave.length} tiendas y se eliminaron ${itemsToDelete.length}!`;
+      } else if (itemsToDelete.length > 0) {
+        msg = `¡Se eliminó la carga de ${itemsToDelete.length} ${itemsToDelete.length === 1 ? 'tienda' : 'tiendas'} correctamente!`;
+      } else {
+        msg = `¡Se guardaron ${itemsToSave.length} tiendas correctamente!`;
+      }
+      showToast(msg, 'success');
+
+      if (itemsToSave.length > 0) {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.8 },
+        });
+      }
     } catch (err) {
       console.error(err);
-      showToast('Hubo un error al guardar. Intentá de nuevo.', 'error');
+      showToast('Hubo un error al guardar los cambios. Intentá de nuevo.', 'error');
     } finally {
       setIsSaving(false);
     }
