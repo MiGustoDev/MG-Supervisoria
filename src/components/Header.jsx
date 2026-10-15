@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, LogOut, ChevronDown, Check, ShieldCheck, Database, X, Lock } from 'lucide-react';
 import { animatePopoverEnter, animatePopoverExit } from '../lib/animations';
+import { UserAvatar } from './UserAvatar';
 
 export function Header({
   currentUser,
@@ -74,13 +75,10 @@ export function Header({
               }}
               className="flex items-center gap-2.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-amber-500/40 text-left transition shadow-md group"
             >
-              <div
-                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br ${
-                  currentUser.avatarColor || 'from-amber-500 to-orange-600'
-                } flex items-center justify-center font-black text-white text-xs sm:text-sm shadow-sm shrink-0`}
-              >
-                {currentUser.name ? currentUser.name.charAt(0) : 'U'}
-              </div>
+              <UserAvatar
+                user={currentUser}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl"
+              />
 
               <div className="hidden sm:block">
                 <p className="text-xs font-black text-white group-hover:text-amber-300 transition leading-tight">
@@ -116,13 +114,10 @@ export function Header({
               {/* Profile Card Header */}
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 mb-2">
                 <div className="flex items-center gap-2.5">
-                  <div
-                    className={`w-9 h-9 rounded-xl bg-gradient-to-br ${
-                      currentUser.avatarColor || 'from-amber-500 to-orange-600'
-                    } flex items-center justify-center font-black text-white text-sm shadow-sm shrink-0`}
-                  >
-                    {currentUser.name.charAt(0)}
-                  </div>
+                  <UserAvatar
+                    user={currentUser}
+                    className="w-9 h-9 rounded-xl"
+                  />
                   <div className="min-w-0">
                     <p className="text-xs font-black text-white truncate">
                       {currentUser.name}

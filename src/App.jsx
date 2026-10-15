@@ -14,6 +14,7 @@ import { CustomDatePicker } from './components/CustomDatePicker';
 import { CustomMonthPicker } from './components/CustomMonthPicker';
 import { CustomSupervisorSelect } from './components/CustomSupervisorSelect';
 import { Footer } from './components/Footer';
+import { UserAvatar } from './components/UserAvatar';
 import { api } from './lib/api';
 import { getSupabaseCredentials } from './lib/supabase';
 import { getStoredSession, clearSession, isUserAdmin, canUserAccessHistory } from './lib/auth';
@@ -984,13 +985,11 @@ export default function App() {
                 /* Supervisor: Locked strictly to their own account */
                 <div className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3 text-white font-bold text-base shadow-inner flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div
-                      className={`w-7 h-7 rounded-lg bg-gradient-to-br ${
-                        currentUser?.avatarColor || 'from-amber-500 to-orange-600'
-                      } flex items-center justify-center font-extrabold text-white text-xs`}
-                    >
-                      {currentUser?.name?.charAt(0) || 'U'}
-                    </div>
+                    <UserAvatar
+                      user={currentUser}
+                      className="w-7 h-7 rounded-lg"
+                      textClassName="text-xs font-extrabold text-white"
+                    />
                     <span>{currentUser?.name}</span>
                   </div>
                   <span className="text-xs text-amber-400 font-extrabold bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/20">

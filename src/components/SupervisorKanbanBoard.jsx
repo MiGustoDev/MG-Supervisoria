@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { isUserAdmin, canUserManageStores } from '../lib/auth';
 import { gsap, useGSAP } from '../lib/animations';
+import { UserAvatar } from './UserAvatar';
 
 export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
   const [draggedStoreId, setDraggedStoreId] = useState(null);
@@ -202,11 +203,12 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div
-                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br ${col.avatarColor} flex items-center justify-center font-extrabold text-white text-xs sm:text-sm shadow-md shrink-0`}
-                  >
-                    {col.name.charAt(0)}
-                  </div>
+                  <UserAvatar
+                    user={col}
+                    name={col.name}
+                    avatarColor={col.avatarColor}
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl"
+                  />
                   <div className="min-w-0 flex-1">
                     <h4 className="font-extrabold text-white text-xs sm:text-sm leading-snug truncate">
                       {col.name}

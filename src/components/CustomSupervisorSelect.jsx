@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserCheck, ChevronDown, Check, Sparkles, Store } from 'lucide-react';
 import { animatePopoverEnter, animatePopoverExit } from '../lib/animations';
+import { UserAvatar } from './UserAvatar';
 
 export function CustomSupervisorSelect({
   value,
@@ -82,13 +83,12 @@ export function CustomSupervisorSelect({
               🌟
             </div>
           ) : (
-            <div
-              className={`w-8 h-8 rounded-xl bg-gradient-to-br ${
-                currentSup?.avatarColor || 'from-amber-500 to-orange-600'
-              } flex items-center justify-center font-extrabold text-white text-xs shadow-sm shrink-0`}
-            >
-              {currentSup?.name ? currentSup.name.charAt(0) : 'S'}
-            </div>
+            <UserAvatar
+              user={currentSup}
+              name={currentSup?.name}
+              avatarColor={currentSup?.avatarColor}
+              className="w-8 h-8 rounded-xl"
+            />
           )}
 
           <div className="text-left min-w-0">
@@ -166,13 +166,12 @@ export function CustomSupervisorSelect({
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div
-                      className={`w-7 h-7 rounded-lg bg-gradient-to-br ${
-                        s.avatarColor || 'from-amber-500 to-orange-600'
-                      } flex items-center justify-center font-extrabold text-white text-xs shadow-sm shrink-0`}
-                    >
-                      {s.name.charAt(0)}
-                    </div>
+                    <UserAvatar
+                      user={s}
+                      name={s.name}
+                      avatarColor={s.avatarColor}
+                      className="w-7 h-7 rounded-lg"
+                    />
                     <div className="min-w-0">
                       <p className="font-extrabold text-sm truncate">{s.name}</p>
                       <p className="text-[11px] text-slate-400 truncate">

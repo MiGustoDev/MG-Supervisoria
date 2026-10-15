@@ -33,6 +33,7 @@ import { exportHistoryPDF } from '../lib/pdfExport';
 import { canUserDeleteRecords, canUserEditRecords } from '../lib/auth';
 import { CustomDatePicker } from './CustomDatePicker';
 import { AnimatedNumber } from './AnimatedNumber';
+import { UserAvatar } from './UserAvatar';
 import { animateModalEnter, animateModalExit, animatePopoverEnter, animatePopoverExit, gsap, useGSAP } from '../lib/animations';
 
 // Función para mostrar fecha en formato Día/Mes/Año (DD/MM/YYYY)
@@ -94,13 +95,13 @@ function HistorySupervisorFilter({ value, onChange, supervisoras }) {
           {isAll ? (
             <span className="text-xs">🌟</span>
           ) : (
-            <div
-              className={`w-5 h-5 rounded-md bg-gradient-to-br ${
-                selectedSup?.avatarColor || 'from-amber-500 to-orange-600'
-              } flex items-center justify-center font-extrabold text-white text-[10px] shrink-0`}
-            >
-              {selectedSup?.name?.charAt(0) || 'S'}
-            </div>
+            <UserAvatar
+              user={selectedSup}
+              name={selectedSup?.name}
+              avatarColor={selectedSup?.avatarColor}
+              className="w-5 h-5 rounded-md"
+              textClassName="text-[10px] font-extrabold text-white"
+            />
           )}
           <span className="truncate max-w-[130px] sm:max-w-[170px] text-left">
             {isAll ? 'Todas las supervisoras' : selectedSup?.name || 'Supervisora'}
@@ -157,13 +158,13 @@ function HistorySupervisorFilter({ value, onChange, supervisoras }) {
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <div
-                    className={`w-5 h-5 rounded-md bg-gradient-to-br ${
-                      s.avatarColor || 'from-amber-500 to-orange-600'
-                    } flex items-center justify-center font-extrabold text-white text-[10px] shrink-0`}
-                  >
-                    {s.name.charAt(0)}
-                  </div>
+                  <UserAvatar
+                    user={s}
+                    name={s.name}
+                    avatarColor={s.avatarColor}
+                    className="w-5 h-5 rounded-md"
+                    textClassName="text-[10px] font-extrabold text-white"
+                  />
                   <span className="font-bold text-xs sm:text-sm truncate">{s.name}</span>
                 </div>
                 {isSelected && <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
