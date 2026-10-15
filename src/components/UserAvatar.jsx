@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getUserAvatarUrl } from '../lib/userAvatars';
+import { getUserAvatarCandidates } from '../lib/userAvatars';
 
 export function UserAvatar({
   user,
@@ -9,22 +9,34 @@ export function UserAvatar({
   avatarColor,
   alt,
 }) {
-  const [hasError, setHasError] = useState(false);
-  const avatarUrl = getUserAvatarUrl(user || name);
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  const candidates = getUserAvatarCandidates(user || name);
 
   const displayName = name || user?.name || '';
   const initial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
   const gradient = avatarColor || user?.avatarColor || 'from-amber-500 to-orange-600';
 
-  if (avatarUrl && !hasError) {
+  const currentSrc =
+    candidateIndex >= 0 && candidateIndex < candidates.length ? candidates[candidateIndex] : null;
+
+  const handleImgError = () => {
+    if (candidateIndex + 1 < candidates.length) {
+      setCandidateIndex((prev) => prev + 1);
+    } else {
+      setCandidateIndex(-1); // No more candidates, show initial
+    }
+  };
+
+  if (currentSrc) {
     return (
       <div
         className={`${className} overflow-hidden shrink-0 bg-slate-800 border border-slate-700/60 shadow-sm relative flex items-center justify-center`}
       >
         <img
-          src={avatarUrl}
+          key={currentSrc}
+          src={currentSrc}
           alt={alt || displayName || 'Usuario'}
-          onError={() => setHasError(true)}
+          onError={handleImgError}
           className="w-full h-full object-cover object-top"
           loading="lazy"
         />
