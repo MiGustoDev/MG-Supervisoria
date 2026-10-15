@@ -33,7 +33,7 @@ import {
   formatThousands,
 } from './lib/formatters';
 import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy, FileText, Save, RotateCcw } from 'lucide-react';
-import { animateTabEnter, animateToastEnter, gsap } from './lib/animations';
+import { animateTabEnter, animateTabExit, animateToastEnter, gsap } from './lib/animations';
 
 const LS_SELECTED_SUP = 'mg_active_supervisora';
 const ALL_SUP = '__all';
@@ -43,6 +43,7 @@ export default function App() {
   const tabContentRef = useRef(null);
   const toastRef = useRef(null);
   const storeGridRef = useRef(null);
+  const rankingContentRef = useRef(null);
   const [currentUser, setCurrentUser] = useState(() => getStoredSession());
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -92,12 +93,49 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
+  const isTabChangingRef = useRef(false);
+
+  const handleTabChange = (nextTab) => {
+    if (nextTab === activeTab || isTabChangingRef.current) return;
+    if (tabContentRef.current) {
+      isTabChangingRef.current = true;
+      animateTabExit(tabContentRef.current, () => {
+        setActiveTab(nextTab);
+        isTabChangingRef.current = false;
+      });
+    } else {
+      setActiveTab(nextTab);
+    }
+  };
+
   // GSAP: Animate tab transitions
   useEffect(() => {
     if (tabContentRef.current) {
       animateTabEnter(tabContentRef.current);
     }
   }, [activeTab]);
+
+  const isRankingChangingRef = useRef(false);
+
+  const handleRankingViewChange = (nextView) => {
+    if (nextView === rankingView || isRankingChangingRef.current) return;
+    if (rankingContentRef.current) {
+      isRankingChangingRef.current = true;
+      animateTabExit(rankingContentRef.current, () => {
+        setRankingView(nextView);
+        isRankingChangingRef.current = false;
+      });
+    } else {
+      setRankingView(nextView);
+    }
+  };
+
+  // GSAP: Animate Ranking View transitions (Mes / Día)
+  useEffect(() => {
+    if (rankingContentRef.current) {
+      animateTabEnter(rankingContentRef.current);
+    }
+  }, [rankingView]);
 
   // GSAP: Animate toast notification
   useEffect(() => {
@@ -718,8 +756,8 @@ export default function App() {
         <div className="mb-6 bg-slate-900/70 p-1.5 rounded-2xl border border-slate-800 shadow-md">
           <div className={`grid gap-1 sm:flex sm:items-center sm:gap-1.5 ${canAccessHistory ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
             <button
-              onClick={() => setActiveTab('carga')}
-              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center ${
+              onClick={() => handleTabChange('carga')}
+              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
                 activeTab === 'carga'
                   ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -730,8 +768,8 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setActiveTab('ranking')}
-              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center ${
+              onClick={() => handleTabChange('ranking')}
+              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
                 activeTab === 'ranking'
                   ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -745,8 +783,8 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setActiveTab('kanban')}
-              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center ${
+              onClick={() => handleTabChange('kanban')}
+              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
                 activeTab === 'kanban'
                   ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -765,8 +803,8 @@ export default function App() {
             {/* Pestaña Historial Exclusiva para Elizabeth y Admin */}
             {canAccessHistory && (
               <button
-                onClick={() => setActiveTab('historial')}
-                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center ${
+                onClick={() => handleTabChange('historial')}
+                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
                   activeTab === 'historial'
                     ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
                     : 'text-purple-300/80 hover:text-white hover:bg-purple-950/40 border border-purple-900/30'
@@ -829,8 +867,8 @@ export default function App() {
                 <div className="flex p-1.5 bg-slate-950 rounded-2xl border border-slate-800 shadow-inner">
                   <button
                     type="button"
-                    onClick={() => setRankingView('mes')}
-                    className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
+                    onClick={() => handleRankingViewChange('mes')}
+                    className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer active:scale-95 ${
                       rankingView === 'mes'
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -840,8 +878,8 @@ export default function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setRankingView('dia')}
-                    className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
+                    onClick={() => handleRankingViewChange('dia')}
+                    className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer active:scale-95 ${
                       rankingView === 'dia'
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -874,26 +912,28 @@ export default function App() {
 
             {/* Content: Day Ranking OR Monthly Dashboard according to selection */}
             {activeStores.length > 0 ? (
-              rankingView === 'dia' ? (
-                <DayRankTable
-                  rankedList={rankedDayList}
-                  metric={dayRankMetric}
-                  onMetricChange={setDayRankMetric}
-                  dateTitle={fmtDayLong(selectedFecha)}
-                />
-              ) : (
-                <MonthlyDashboard
-                  month={selectedMonth}
-                  onMonthChange={setSelectedMonth}
-                  kpis={monthlyData.kpis}
-                  storesMonthly={monthlyData.storesMonthly}
-                  supervisorasMonthly={monthlyData.supervisorasMonthly}
-                  daysMonthly={monthlyData.daysMonthly}
-                  isAllSupervisors={selectedSup === ALL_SUP}
-                  onExportMonthPdf={handleExportRankingPdf}
-                  onExportMonthCsv={handleExportMonthCsv}
-                />
-              )
+              <div ref={rankingContentRef} key={rankingView}>
+                {rankingView === 'dia' ? (
+                  <DayRankTable
+                    rankedList={rankedDayList}
+                    metric={dayRankMetric}
+                    onMetricChange={setDayRankMetric}
+                    dateTitle={fmtDayLong(selectedFecha)}
+                  />
+                ) : (
+                  <MonthlyDashboard
+                    month={selectedMonth}
+                    onMonthChange={setSelectedMonth}
+                    kpis={monthlyData.kpis}
+                    storesMonthly={monthlyData.storesMonthly}
+                    supervisorasMonthly={monthlyData.supervisorasMonthly}
+                    daysMonthly={monthlyData.daysMonthly}
+                    isAllSupervisors={selectedSup === ALL_SUP}
+                    onExportMonthPdf={handleExportRankingPdf}
+                    onExportMonthCsv={handleExportMonthCsv}
+                  />
+                )}
+              </div>
             ) : (
               <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
                 <p className="text-base font-semibold text-white mb-1">

@@ -1,33 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 
-export function AnimatedNumber({ value, formatter, duration = 0.6 }) {
+export function AnimatedNumber({
+  value,
+  formatter,
+  duration = 0.85,
+  startFromZero = true,
+  decimals = 0,
+}) {
   const numericValue = typeof value === 'number' ? value : Number(value) || 0;
-  const [displayValue, setDisplayValue] = useState(numericValue);
-  const tweenObj = useRef({ val: numericValue });
-  const isMounted = useRef(false);
+  const initialVal = startFromZero ? 0 : numericValue;
+  const [displayValue, setDisplayValue] = useState(initialVal);
+  const tweenObj = useRef({ val: initialVal });
 
   useEffect(() => {
-    if (!isMounted.current) {
-      isMounted.current = true;
-      setDisplayValue(numericValue);
-      tweenObj.current.val = numericValue;
-      return;
-    }
-
     const targetVal = numericValue;
     const startVal = tweenObj.current.val;
 
-    if (startVal === targetVal) {
+    if (startVal === targetVal && targetVal === 0) {
+      setDisplayValue(0);
       return;
     }
+
+    gsap.killTweensOf(tweenObj.current);
 
     const tween = gsap.to(tweenObj.current, {
       val: targetVal,
       duration,
       ease: 'power2.out',
       onUpdate: () => {
-        setDisplayValue(Math.round(tweenObj.current.val));
+        if (decimals > 0) {
+          setDisplayValue(Number(tweenObj.current.val.toFixed(decimals)));
+        } else {
+          setDisplayValue(Math.round(tweenObj.current.val));
+        }
       },
       onComplete: () => {
         setDisplayValue(targetVal);
@@ -37,7 +43,7 @@ export function AnimatedNumber({ value, formatter, duration = 0.6 }) {
     return () => {
       tween.kill();
     };
-  }, [numericValue, duration]);
+  }, [numericValue, duration, decimals]);
 
   const formatted = formatter ? formatter(displayValue) : displayValue;
 

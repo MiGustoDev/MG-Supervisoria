@@ -119,15 +119,38 @@ export function animateModalExit(contentRef, backdropRef, onComplete) {
 }
 
 /**
- * Animate tab switch content
+ * Animate tab switch content exit
+ * @param {HTMLElement} target 
+ * @param {Function} onComplete 
+ */
+export function animateTabExit(target, onComplete) {
+  if (!target) {
+    if (onComplete) onComplete();
+    return;
+  }
+  gsap.killTweensOf(target);
+  gsap.to(target, {
+    opacity: 0,
+    y: -8,
+    duration: 0.18,
+    ease: 'power2.in',
+    onComplete: () => {
+      if (onComplete) onComplete();
+    },
+  });
+}
+
+/**
+ * Animate tab switch content enter with silky smooth ease
  * @param {HTMLElement} target 
  */
 export function animateTabEnter(target) {
   if (!target) return;
+  gsap.killTweensOf(target);
   gsap.fromTo(
     target,
-    { opacity: 0, y: 8 },
-    { opacity: 1, y: 0, duration: 0.3, ease: GSAP_EASE.smooth, clearProps: 'transform' }
+    { opacity: 0, y: 12 },
+    { opacity: 1, y: 0, duration: 0.42, ease: 'power2.out', clearProps: 'transform' }
   );
 }
 
