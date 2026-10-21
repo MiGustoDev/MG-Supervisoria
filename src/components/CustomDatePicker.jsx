@@ -9,7 +9,7 @@ const MONTH_NAMES = [
 
 const DAY_NAMES = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'];
 
-export function CustomDatePicker({ value, onChange, maxDate, compact = false }) {
+export function CustomDatePicker({ value, onChange, minDate, maxDate, compact = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -42,6 +42,7 @@ export function CustomDatePicker({ value, onChange, maxDate, compact = false }) 
 
   const yday = getYesterdayStr();
   const maxLimit = maxDate || yday;
+  const minLimit = minDate || '';
 
   // Navigate months
   const handlePrevMonth = (e) => {
@@ -106,7 +107,7 @@ export function CustomDatePicker({ value, onChange, maxDate, compact = false }) 
   }
 
   const handleSelectDay = (dateStr) => {
-    if (dateStr > maxLimit) return;
+    if (dateStr > maxLimit || (minLimit && dateStr < minLimit)) return;
     onChange(dateStr);
     setIsOpen(false);
   };
@@ -188,7 +189,7 @@ export function CustomDatePicker({ value, onChange, maxDate, compact = false }) 
           <div className="grid grid-cols-7 gap-1 font-mono-numbers">
             {days.map((item, idx) => {
               const isSelected = item.dateStr === value;
-              const isDisabled = item.dateStr > maxLimit;
+              const isDisabled = item.dateStr > maxLimit || (minLimit && item.dateStr < minLimit);
               const isYday = item.dateStr === yday;
 
               return (

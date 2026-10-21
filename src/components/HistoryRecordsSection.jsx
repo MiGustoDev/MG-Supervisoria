@@ -27,7 +27,7 @@ import {
   Save,
   Check
 } from 'lucide-react';
-import { ARS, INT, DEC, parseYmd, pad, parseCount, parseMoney, todayStr } from '../lib/formatters';
+import { ARS, INT, DEC, parseYmd, pad, parseCount, parseMoney, formatMoneyInput, todayStr } from '../lib/formatters';
 import { exportHistoryPDF } from '../lib/pdfExport';
 import { canUserDeleteRecords, canUserEditRecords } from '../lib/auth';
 import { CustomDatePicker } from './CustomDatePicker';
@@ -88,7 +88,7 @@ export function HistoryRecordsSection({
       supervisoraId: record.supervisoraId || '',
       fecha: record.fecha || '',
       comandas: String(record.comandas || ''),
-      venta: String(record.venta || ''),
+      venta: record.venta !== undefined && record.venta !== null ? formatMoneyInput(record.venta) : '',
       unidades: String(record.unidades || ''),
       notas: record.notas || '',
     });
@@ -101,7 +101,7 @@ export function HistoryRecordsSection({
       supervisoraId: activeRecord.supervisoraId || '',
       fecha: activeRecord.fecha || '',
       comandas: String(activeRecord.comandas || ''),
-      venta: String(activeRecord.venta || ''),
+      venta: activeRecord.venta !== undefined && activeRecord.venta !== null ? formatMoneyInput(activeRecord.venta) : '',
       unidades: String(activeRecord.unidades || ''),
       notas: activeRecord.notas || '',
     });

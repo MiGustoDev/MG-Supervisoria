@@ -9,25 +9,28 @@ import { DayRankTable } from './components/DayRankTable';
 import { MonthlyDashboard } from './components/MonthlyDashboard';
 import { SupervisorKanbanBoard } from './components/SupervisorKanbanBoard';
 import { HistoryRecordsSection } from './components/HistoryRecordsSection';
+import { RangeReportDashboard } from './components/RangeReportDashboard';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { CustomDatePicker } from './components/CustomDatePicker';
 import { CustomMonthPicker } from './components/CustomMonthPicker';
 import { api } from './lib/api';
 import { getSupabaseCredentials } from './lib/supabase';
 import { getStoredSession, clearSession, isUserAdmin, canUserAccessHistory } from './lib/auth';
-import { exportRankingPDF } from './lib/pdfExport';
+import { exportRankingPDF, exportRangeReportPDF } from './lib/pdfExport';
 import {
   getYesterdayStr,
   fmtDayLong,
   todayStr,
   parseCount,
   parseMoney,
+  formatMoneyInput,
   INT,
   ARS,
   exportCsv,
   MONTHF,
   parseYmd,
   pad,
+  ymd,
 } from './lib/formatters';
 import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy, FileText } from 'lucide-react';
 
@@ -50,6 +53,16 @@ export default function App() {
   });
   const [selectedFecha, setSelectedFecha] = useState(getYesterdayStr());
   const [selectedMonth, setSelectedMonth] = useState(() => getYesterdayStr().slice(0, 7));
+
+  // Date Range state for customized reporting
+  const [rangeStartDate, setRangeStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return ymd(d);
+  });
+  const [rangeEndDate, setRangeEndDate] = useState(getYesterdayStr());
+  const [rangeRows, setRangeRows] = useState([]);
+  const [isLoadingRange, setIsLoadingRange] = useState(false);
 
   // Sync with currentUser when user logs in or switches
   useEffect(() => {
@@ -111,7 +124,7 @@ export default function App() {
             const saved = data[t.id];
             next[t.id] = {
               rc: saved ? String(saved.comandas) : '',
-              rv: saved ? String(saved.venta) : '',
+              rv: saved ? formatMoneyInput(saved.venta) : '',
               ru: saved ? String(saved.unidades) : '',
             };
           }
@@ -142,6 +155,26 @@ export default function App() {
   useEffect(() => {
     loadMonthData(selectedMonth);
   }, [selectedMonth]);
+
+  // 3b. Load Range Data (for Customized Date Range Report)
+  const loadRangeData = async (desde, hasta) => {
+    if (!desde || !hasta) return;
+    setIsLoadingRange(true);
+    try {
+      const rows = await api.getCargasRango(desde, hasta);
+      setRangeRows(rows);
+    } catch (err) {
+      console.error('Error loading range data:', err);
+    } finally {
+      setIsLoadingRange(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'ranking' && rankingView === 'rango') {
+      loadRangeData(rangeStartDate, rangeEndDate);
+    }
+  }, [rangeStartDate, rangeEndDate, activeTab, rankingView]);
 
   // 4. Load All Cargas (for History Tab)
   const loadAllCargas = async () => {
@@ -270,7 +303,7 @@ export default function App() {
     const empty = !rc && !rv && !ru;
     const errs = [];
     if (rc && isNaN(c)) errs.push('comandas: solo números enteros');
-    if (rv && isNaN(v)) errs.push('venta: ej. 1.250.000');
+    if (rv && isNaN(v)) errs.push('venta: ej. 1.669.515,40');
     if (ru && isNaN(u)) errs.push('unidades: solo números enteros');
 
     const complete = !isNaN(c) && !isNaN(v) && !isNaN(u);
@@ -436,20 +469,47 @@ export default function App() {
   // Exportar Ranking / Métricas en PDF de alta calidad
   const handleExportRankingPdf = () => {
     try {
-      exportRankingPDF({
-        rankingView,
-        dateTitle: fmtDayLong(selectedFecha),
-        month: selectedMonth,
-        rankedList: rankedDayList,
-        kpis: monthlyData.kpis,
-        storesMonthly: monthlyData.storesMonthly,
-        supervisorasMonthly: monthlyData.supervisorasMonthly,
-      });
-      showToast('Informe PDF de métricas generado y descargado', 'success');
+      if (rankingView === 'rango') {
+        exportRangeReportPDF({
+          startDate: rangeStartDate,
+          endDate: rangeEndDate,
+          supervisorName: activeSupName,
+          kpis: rangeData.kpis,
+          storesData: rangeData.storesData,
+          supervisorasData: rangeData.supervisorasData,
+          isAllSupervisors: selectedSup === ALL_SUP,
+        });
+        showToast('Informe PDF del período generado y descargado', 'success');
+      } else {
+        exportRankingPDF({
+          rankingView,
+          dateTitle: fmtDayLong(selectedFecha),
+          month: selectedMonth,
+          rankedList: rankedDayList,
+          kpis: monthlyData.kpis,
+          storesMonthly: monthlyData.storesMonthly,
+          supervisorasMonthly: monthlyData.supervisorasMonthly,
+        });
+        showToast('Informe PDF de métricas generado y descargado', 'success');
+      }
     } catch (err) {
       console.error('Error generating ranking PDF:', err);
-      showToast('Error al generar el PDF del ranking', 'error');
+      showToast('Error al generar el PDF del reporte', 'error');
     }
+  };
+
+  // Export Range CSV
+  const handleExportRangeCsv = () => {
+    const rows = [
+      'Fecha;Supervisora;Tienda;Comandas;Venta;Unidades;Ticket Promedio;Unidades por Comanda',
+    ];
+    rangeRows.forEach((r) => {
+      const ticket = r.comandas > 0 ? (r.venta / r.comandas).toFixed(2) : '';
+      const upc = r.comandas > 0 ? (r.unidades / r.comandas).toFixed(2) : '';
+      rows.push(`${r.fecha};"${r.supervisoraNombre || ''}";"${r.tiendaNombre}";${r.comandas};${r.venta};${r.unidades};${ticket};${upc}`);
+    });
+    exportCsv(`Reporte_MiGusto_${rangeStartDate}_al_${rangeEndDate}.csv`, rows);
+    showToast('Excel del rango descargado', 'success');
   };
 
   // Export Month CSV (mantenido como utilitario opcional)
@@ -620,6 +680,133 @@ export default function App() {
     };
   }, [monthlyRows, activeStores, selectedMonth, selectedSup, config.supervisoras]);
 
+  // Date Range KPIs & Breakdowns
+  const rangeData = useMemo(() => {
+    const storeIds = new Set(activeStores.map((t) => t.id));
+    const filtered = selectedSup === ALL_SUP ? rangeRows : rangeRows.filter((r) => storeIds.has(r.tiendaId));
+
+    let venta = 0, comandas = 0, unidades = 0;
+    filtered.forEach((r) => {
+      venta += r.venta;
+      comandas += r.comandas;
+      unidades += r.unidades;
+    });
+
+    const ticketPromedio = comandas > 0 ? venta / comandas : null;
+    const unidPorComanda = comandas > 0 ? unidades / comandas : null;
+
+    // Array de días en el rango especificado [rangeStartDate ... rangeEndDate]
+    const daysArr = [];
+    if (rangeStartDate && rangeEndDate && rangeStartDate <= rangeEndDate) {
+      const cur = parseYmd(rangeStartDate);
+      const end = parseYmd(rangeEndDate);
+      while (cur <= end) {
+        daysArr.push(ymd(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+
+    const totalStores = activeStores.length;
+    const cargasEsperadas = daysArr.length * totalStores;
+    const cargasRealizadas = filtered.length;
+    const cumplimientoPorcentaje = cargasEsperadas > 0 ? Math.round((cargasRealizadas / cargasEsperadas) * 100) : 0;
+
+    // Desglose por tienda
+    const storesData = activeStores.map((t) => {
+      const storeRows = filtered.filter((r) => r.tiendaId === t.id);
+      let sVenta = 0, sCmdas = 0, sUnid = 0;
+      storeRows.forEach((r) => {
+        sVenta += r.venta;
+        sCmdas += r.comandas;
+        sUnid += r.unidades;
+      });
+      const sTicket = sCmdas > 0 ? sVenta / sCmdas : null;
+      const sUpc = sCmdas > 0 ? sUnid / sCmdas : null;
+      const supObj = config.supervisoras.find((s) => s.id === t.sup);
+
+      return {
+        id: t.id,
+        name: t.name,
+        supervisoraNombre: supObj ? supObj.name : null,
+        isPropia: t.isPropia,
+        isExperience: t.isExperience,
+        diasCargados: storeRows.length,
+        diasEsperados: daysArr.length,
+        comandas: sCmdas,
+        venta: sVenta,
+        unidades: sUnid,
+        ticketPromedio: sTicket,
+        unidPorComanda: sUpc,
+      };
+    }).sort((a, b) => b.venta - a.venta);
+
+    // Comparativa de supervisoras en el rango (para vista general de todas)
+    const supervisorasData = config.supervisoras.map((s) => {
+      const sStores = config.tiendas.filter((t) => t.sup === s.id);
+      const sStoreIds = new Set(sStores.map((t) => t.id));
+      const sRows = rangeRows.filter((r) => sStoreIds.has(r.tiendaId));
+
+      let sv = 0, sc = 0, su = 0;
+      sRows.forEach((r) => {
+        sv += r.venta;
+        sc += r.comandas;
+        su += r.unidades;
+      });
+
+      const sEsperadas = daysArr.length * sStores.length;
+      const sCumplimiento = sEsperadas > 0 ? Math.round((sRows.length / sEsperadas) * 100) : 0;
+
+      return {
+        id: s.id,
+        name: s.name,
+        tiendasCount: sStores.length,
+        cargasRealizadas: sRows.length,
+        cargasEsperadas: sEsperadas,
+        cumplimientoPorcentaje: sCumplimiento,
+        comandas: sc,
+        venta: sv,
+        unidades: su,
+        ticketPromedio: sc > 0 ? sv / sc : null,
+      };
+    }).sort((a, b) => b.venta - a.venta);
+
+    // Detalle día a día en el rango
+    const daysData = daysArr.slice().reverse().map((f) => {
+      const fRows = filtered.filter((r) => r.fecha === f);
+      let fv = 0, fc = 0, fu = 0;
+      fRows.forEach((r) => {
+        fv += r.venta;
+        fc += r.comandas;
+        fu += r.unidades;
+      });
+      return {
+        fecha: f,
+        tiendasCargadas: fRows.length,
+        totalTiendas: totalStores,
+        comandas: fc,
+        venta: fv,
+        unidades: fu,
+      };
+    });
+
+    return {
+      kpis: {
+        venta,
+        comandas,
+        unidades,
+        ticketPromedio,
+        unidPorComanda,
+        cargasRealizadas,
+        cargasEsperadas,
+        cumplimientoPorcentaje,
+        totalDias: daysArr.length,
+      },
+      storesData,
+      supervisorasData,
+      daysData,
+    };
+  }, [rangeRows, activeStores, rangeStartDate, rangeEndDate, selectedSup, config.supervisoras, config.tiendas]);
+
   if (!currentUser) {
     return (
       <LoginScreen
@@ -776,26 +963,45 @@ export default function App() {
         ) : activeTab === 'ranking' ? (
           /* TAB 2: RANKING Y MÉTRICAS */
           <div className="space-y-4 sm:space-y-6">
-            {/* Header Filter Info with Día / Mes Toggle */}
+            {/* Header Filter Info with Día / Mes / Rango Toggle */}
             <div className="bg-slate-900/60 border border-slate-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-xl flex flex-wrap items-center justify-between gap-3 sm:gap-4">
               <div>
                 <h3 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
-                  <span>🏆 {rankingView === 'dia' ? 'Ranking del Día' : 'Métricas del Mes'}</span>
+                  <span>
+                    {rankingView === 'dia'
+                      ? '🏆 Ranking del Día'
+                      : rankingView === 'mes'
+                      ? '📅 Métricas del Mes'
+                      : '📊 Reporte por Rango de Fechas'}
+                  </span>
                 </h3>
                 <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
                   {rankingView === 'dia'
                     ? `Posiciones y rendimiento del día (${fmtDayLong(selectedFecha)})`
-                    : 'Acumulado mensual consolidado y detalle de cumplimiento'}
+                    : rankingView === 'mes'
+                    ? 'Acumulado mensual consolidado y detalle de cumplimiento'
+                    : `Análisis consolidado del ${rangeStartDate} al ${rangeEndDate} · ${activeSupName}`}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                {/* Switch Día / Mes (Bigger and comfortable) */}
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Switch Día / Mes / Rango */}
                 <div className="flex p-1.5 bg-slate-950 rounded-2xl border border-slate-800 shadow-inner">
                   <button
                     type="button"
+                    onClick={() => setRankingView('dia')}
+                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
+                      rankingView === 'dia'
+                        ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+                    }`}
+                  >
+                    Día
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setRankingView('mes')}
-                    className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
+                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
                       rankingView === 'mes'
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -805,14 +1011,14 @@ export default function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setRankingView('dia')}
-                    className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
-                      rankingView === 'dia'
+                    onClick={() => setRankingView('rango')}
+                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
+                      rankingView === 'rango'
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
                     }`}
                   >
-                    Día
+                    Rango
                   </button>
                 </div>
 
@@ -824,7 +1030,7 @@ export default function App() {
                   />
                 )}
 
-                {/* Botón Exportar PDF de Ranking / Métricas */}
+                {/* Botón Exportar PDF de Ranking / Métricas / Rango */}
                 <button
                   type="button"
                   onClick={handleExportRankingPdf}
@@ -834,10 +1040,23 @@ export default function App() {
                   <FileText className="w-4 h-4" />
                   <span>Exportar PDF</span>
                 </button>
+
+                {/* Botón Exportar Excel cuando esté en Rango */}
+                {rankingView === 'rango' && (
+                  <button
+                    type="button"
+                    onClick={handleExportRangeCsv}
+                    className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-emerald-600/25 active:scale-95"
+                    title="Descargar CSV del rango de fechas seleccionado"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Exportar CSV</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Content: Day Ranking OR Monthly Dashboard according to selection */}
+            {/* Content: Day Ranking OR Monthly Dashboard OR Range Report Dashboard */}
             {activeStores.length > 0 ? (
               rankingView === 'dia' ? (
                 <DayRankTable
@@ -846,7 +1065,7 @@ export default function App() {
                   onMetricChange={setDayRankMetric}
                   dateTitle={fmtDayLong(selectedFecha)}
                 />
-              ) : (
+              ) : rankingView === 'mes' ? (
                 <MonthlyDashboard
                   month={selectedMonth}
                   onMonthChange={setSelectedMonth}
@@ -857,6 +1076,26 @@ export default function App() {
                   isAllSupervisors={selectedSup === ALL_SUP}
                   onExportMonthPdf={handleExportRankingPdf}
                   onExportMonthCsv={handleExportMonthCsv}
+                />
+              ) : (
+                <RangeReportDashboard
+                  startDate={rangeStartDate}
+                  endDate={rangeEndDate}
+                  onStartDateChange={setRangeStartDate}
+                  onEndDateChange={setRangeEndDate}
+                  selectedSup={selectedSup}
+                  onSelectSup={(supId) => {
+                    setSelectedSup(supId);
+                    localStorage.setItem(LS_SELECTED_SUP, supId);
+                  }}
+                  supervisoras={config.supervisoras}
+                  kpis={rangeData.kpis}
+                  storesData={rangeData.storesData}
+                  supervisorasData={rangeData.supervisorasData}
+                  daysData={rangeData.daysData}
+                  isAllSupervisors={selectedSup === ALL_SUP}
+                  currentUser={currentUser}
+                  isAdmin={isUserAdmin(currentUser)}
                 />
               )
             ) : (

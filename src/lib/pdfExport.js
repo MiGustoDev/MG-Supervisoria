@@ -541,3 +541,184 @@ export async function exportRankingPDF({
   }
 }
 
+/**
+ * Exporta un Informe Ejecutivo completo por Rango de Fechas (Desde - Hasta)
+ */
+export async function exportRangeReportPDF({
+  startDate = '',
+  endDate = '',
+  supervisorName = 'Todas las supervisoras',
+  kpis = {},
+  storesData = [],
+  supervisorasData = [],
+  isAllSupervisors = true,
+}) {
+  const doc = new jsPDF('landscape', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const logoBase64 = await getLogoBase64();
+
+  const now = new Date();
+  const emisionStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())} hs`;
+
+  // 1. Encabezado moderno
+  const cardsStartY = drawPrintHeader(doc, {
+    logoBase64,
+    title: `Informe por Período · Del ${formatDMY(startDate)} al ${formatDMY(endDate)}`,
+    subtitle: `Supervisión: ${supervisorName} · Evaluación de comportamiento de tiendas y ventas acumuladas`,
+    dateRight: emisionStr,
+    isLandscape: true,
+  });
+
+  // 2. Tarjetas KPI
+  const cards = [
+    { label: 'Venta del Período', val: ARS.format(kpis.venta || 0), color: [16, 185, 129] },
+    { label: 'Comandas Totales', val: INT.format(kpis.comandas || 0), color: [2, 132, 199] },
+    { label: 'Unidades Vendidas', val: INT.format(kpis.unidades || 0), color: [225, 29, 72] },
+    { label: 'Ticket Promedio', val: ARS.format(kpis.ticketPromedio || 0), color: [217, 119, 6] },
+  ];
+
+  let currentY = drawKpiCards(doc, cardsStartY, cards, pageWidth);
+
+  // 3. Si están todas las supervisoras, tabla resumida por supervisora
+  if (isAllSupervisors && supervisorasData.length > 0) {
+    const supRows = supervisorasData.map((s, idx) => [
+      String(idx + 1),
+      s.name,
+      `${s.tiendasCount} tiendas`,
+      `${s.cumplimientoPorcentaje}%`,
+      INT.format(s.comandas),
+      ARS.format(s.venta),
+      INT.format(s.unidades),
+      s.ticketPromedio ? ARS.format(s.ticketPromedio) : '-',
+    ]);
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [[
+        { content: '#', styles: { halign: 'center' } },
+        { content: 'SUPERVISORA', styles: { halign: 'left' } },
+        { content: 'TIENDAS', styles: { halign: 'center' } },
+        { content: 'CUMPLIMIENTO', styles: { halign: 'center' } },
+        { content: 'COMANDAS', styles: { halign: 'right' } },
+        { content: 'VENTA TOTAL ($)', styles: { halign: 'right' } },
+        { content: 'UNIDADES', styles: { halign: 'right' } },
+        { content: 'TICKET PROM.', styles: { halign: 'right' } },
+      ]],
+      body: supRows,
+      theme: 'plain',
+      headStyles: {
+        fillColor: [241, 245, 249],
+        textColor: [51, 65, 85],
+        fontStyle: 'bold',
+        fontSize: 7.5,
+        cellPadding: { top: 2.2, bottom: 2.2, left: 2, right: 2 },
+        lineWidth: 0.15,
+        lineColor: [203, 213, 225],
+      },
+      bodyStyles: {
+        fontSize: 7.5,
+        textColor: [30, 41, 59],
+        cellPadding: { top: 2, bottom: 2, left: 2, right: 2 },
+        lineWidth: 0.08,
+        lineColor: [226, 232, 240],
+      },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 8, textColor: [100, 116, 139] },
+        1: { halign: 'left', fontStyle: 'bold', textColor: [15, 23, 42] },
+        2: { halign: 'center', cellWidth: 20 },
+        3: { halign: 'center', cellWidth: 24, fontStyle: 'bold', textColor: [4, 120, 87] },
+        4: { halign: 'right', cellWidth: 24 },
+        5: { halign: 'right', cellWidth: 34, fontStyle: 'bold', textColor: [4, 120, 87] },
+        6: { halign: 'right', cellWidth: 22 },
+        7: { halign: 'right', cellWidth: 26 },
+      },
+      alternateRowStyles: {
+        fillColor: [250, 252, 254],
+      },
+      margin: { left: 14, right: 14, bottom: 14 },
+    });
+
+    currentY = doc.lastAutoTable.finalY + 6;
+  }
+
+  // 4. Tabla de Tiendas
+  const storeRows = storesData.map((s, idx) => [
+    String(idx + 1),
+    s.name,
+    s.supervisoraNombre || supervisorName,
+    `${s.diasCargados} / ${s.diasEsperados}`,
+    INT.format(s.comandas),
+    ARS.format(s.venta),
+    INT.format(s.unidades),
+    s.ticketPromedio ? ARS.format(s.ticketPromedio) : '-',
+    s.unidPorComanda ? s.unidPorComanda.toFixed(1) : '-',
+  ]);
+
+  autoTable(doc, {
+    startY: currentY,
+    head: [[
+      { content: '#', styles: { halign: 'center' } },
+      { content: 'SUCURSAL', styles: { halign: 'left' } },
+      { content: 'SUPERVISORA', styles: { halign: 'left' } },
+      { content: 'DÍAS CARGA', styles: { halign: 'center' } },
+      { content: 'COMANDAS', styles: { halign: 'right' } },
+      { content: 'VENTA TOTAL ($)', styles: { halign: 'right' } },
+      { content: 'UNIDADES', styles: { halign: 'right' } },
+      { content: 'TICKET PROM.', styles: { halign: 'right' } },
+      { content: 'UNID / CMDA', styles: { halign: 'right' } },
+    ]],
+    body: storeRows,
+    theme: 'plain',
+    headStyles: {
+      fillColor: [241, 245, 249],
+      textColor: [51, 65, 85],
+      fontStyle: 'bold',
+      fontSize: 7.5,
+      cellPadding: { top: 2.8, bottom: 2.8, left: 2, right: 2 },
+      lineWidth: 0.15,
+      lineColor: [203, 213, 225],
+    },
+    bodyStyles: {
+      fontSize: 8,
+      textColor: [30, 41, 59],
+      cellPadding: { top: 2.4, bottom: 2.4, left: 2, right: 2 },
+      lineWidth: 0.08,
+      lineColor: [226, 232, 240],
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 10, textColor: [100, 116, 139] },
+      1: { halign: 'left', fontStyle: 'bold', textColor: [15, 23, 42] },
+      2: { halign: 'left', textColor: [71, 85, 105] },
+      3: { halign: 'center', cellWidth: 24 },
+      4: { halign: 'right', cellWidth: 24 },
+      5: { halign: 'right', cellWidth: 36, fontStyle: 'bold', textColor: [4, 120, 87] },
+      6: { halign: 'right', cellWidth: 24 },
+      7: { halign: 'right', cellWidth: 28 },
+      8: { halign: 'right', cellWidth: 24 },
+    },
+    alternateRowStyles: {
+      fillColor: [250, 252, 254],
+    },
+    margin: { left: 14, right: 14, bottom: 14 },
+    didDrawPage: (data) => {
+      const footerY = pageHeight - 6;
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.2);
+      doc.line(14, footerY - 2.5, pageWidth - 14, footerY - 2.5);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`Mi Gusto · Reporte de Desempeño por Período (${startDate} al ${endDate})`, 14, footerY + 1);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Página ${data.pageNumber} de ${doc.internal.getNumberOfPages()}`, pageWidth - 14, footerY + 1, { align: 'right' });
+    },
+  });
+
+  const fileStart = startDate.replace(/-/g, '');
+  const fileEnd = endDate.replace(/-/g, '');
+  doc.save(`Reporte_Periodo_MiGusto_${fileStart}_a_${fileEnd}.pdf`);
+}
+

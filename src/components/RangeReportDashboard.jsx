@@ -1,0 +1,461 @@
+import React, { useState } from 'react';
+import { ARS, INT, DEC, fmtDay } from '../lib/formatters';
+import { CustomDatePicker } from './CustomDatePicker';
+import { 
+  Calendar, 
+  DollarSign, 
+  Receipt, 
+  ShoppingBag, 
+  Target, 
+  ArrowUpDown, 
+  UserCheck, 
+  TrendingUp, 
+  Store,
+  ChevronDown,
+  Building2,
+  Percent
+} from 'lucide-react';
+
+export function RangeReportDashboard({
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+  selectedSup,
+  onSelectSup,
+  supervisoras = [],
+  kpis = {},
+  storesData = [],
+  supervisorasData = [],
+  daysData = [],
+  isAllSupervisors = true,
+  currentUser = null,
+  isAdmin = false,
+}) {
+  const [sortField, setSortField] = useState('venta'); // 'venta' | 'comandas' | 'unidades' | 'ticketPromedio' | 'diasCargados'
+  const [sortAsc, setSortAsc] = useState(false);
+
+  // Ordenamiento de tiendas
+  const sortedStores = [...storesData].sort((a, b) => {
+    let valA = a[sortField] ?? 0;
+    let valB = b[sortField] ?? 0;
+    if (typeof valA === 'string') {
+      return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    }
+    return sortAsc ? valA - valB : valB - valA;
+  });
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortField(field);
+      setSortAsc(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Selector Toolbar: Rango de Fechas & Filtro de Supervisora */}
+      <div className="bg-slate-900/70 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xl">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          {/* Selector de Rango */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                <span>Fecha Desde</span>
+              </label>
+              <div className="w-full sm:w-48">
+                <CustomDatePicker
+                  value={startDate}
+                  maxDate={endDate}
+                  onChange={onStartDateChange}
+                  compact={true}
+                />
+              </div>
+            </div>
+
+            <div className="hidden sm:flex items-center justify-center pt-5 text-slate-600 font-bold">
+              →
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                <span>Fecha Hasta</span>
+              </label>
+              <div className="w-full sm:w-48">
+                <CustomDatePicker
+                  value={endDate}
+                  minDate={startDate}
+                  onChange={onEndDateChange}
+                  compact={true}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Selector de Supervisora (Si es Admin puede cambiar, si es Supervisora ve la suya) */}
+          <div className="w-full lg:w-72">
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <UserCheck className="w-3.5 h-3.5 text-amber-400" />
+              <span>Supervisión a evaluar</span>
+            </label>
+            {isAdmin ? (
+              <select
+                value={selectedSup}
+                onChange={(e) => onSelectSup(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-bold text-xs sm:text-sm focus:outline-none focus:border-amber-500 shadow-inner"
+              >
+                <option value="__all">🌟 Todas las supervisoras</option>
+                {supervisoras.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-bold text-xs sm:text-sm flex items-center justify-between">
+                <span>{currentUser?.name || 'Supervisora'}</span>
+                <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
+                  {storesData.length} tiendas
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 font-mono-numbers">
+        {/* Venta Acumulada */}
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition" />
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
+              Venta del Período
+            </span>
+            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
+              <DollarSign className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-2xl font-black text-white">
+            {ARS.format(kpis.venta || 0)}
+          </div>
+          <div className="text-xs text-slate-500 mt-1 font-sans">
+            Ticket Promedio: {kpis.ticketPromedio ? ARS.format(kpis.ticketPromedio) : '–'}
+          </div>
+        </div>
+
+        {/* Comandas Totales */}
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
+              Comandas Totales
+            </span>
+            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
+              <Receipt className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-2xl font-black text-white">
+            {INT.format(kpis.comandas || 0)}
+          </div>
+          <div className="text-xs text-slate-500 mt-1 font-sans">
+            {kpis.cargasRealizadas || 0} registros diarios
+          </div>
+        </div>
+
+        {/* Unidades Totales */}
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
+              Empanadas (Unid.)
+            </span>
+            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
+              <ShoppingBag className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-2xl font-black text-white">
+            {INT.format(kpis.unidades || 0)}
+          </div>
+          <div className="text-xs text-slate-500 mt-1 font-sans">
+            {kpis.unidPorComanda ? `${DEC.format(kpis.unidPorComanda)} por comanda` : '–'}
+          </div>
+        </div>
+
+        {/* Cumplimiento de Carga en el Rango */}
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
+              Cumplimiento
+            </span>
+            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+              <Target className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-2xl font-black text-emerald-400">
+            {kpis.cumplimientoPorcentaje || 0}%
+          </div>
+          <div className="text-xs text-slate-500 mt-1 font-sans">
+            {kpis.cargasRealizadas || 0}/{kpis.cargasEsperadas || 0} esperadas ({kpis.totalDias || 0} días)
+          </div>
+        </div>
+      </div>
+
+      {/* Si se ven todas las supervisoras: Comparativa / Ranking de Supervisoras en el rango */}
+      {isAllSupervisors && supervisorasData.length > 0 && (
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div className="p-4 sm:p-5 border-b border-slate-800/80 flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span>👥 Rendimiento por Supervisora en el Período</span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Comparativa consolidada de todas las tiendas asignadas a cada supervisora
+              </p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm font-mono-numbers">
+              <thead className="bg-slate-950/80 text-[11px] uppercase tracking-wider font-semibold text-slate-400 border-b border-slate-800">
+                <tr>
+                  <th className="py-3 px-4 w-12 text-center">#</th>
+                  <th className="py-3 px-4 font-sans">Supervisora</th>
+                  <th className="py-3 px-4 text-center">Tiendas</th>
+                  <th className="py-3 px-4 text-center">Cumplimiento</th>
+                  <th className="py-3 px-4 text-right">Comandas</th>
+                  <th className="py-3 px-4 text-right">Venta Total</th>
+                  <th className="py-3 px-4 text-right">Unidades</th>
+                  <th className="py-3 px-4 text-right">Ticket Prom.</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/50">
+                {supervisorasData.map((sup, idx) => (
+                  <tr key={sup.id} className="hover:bg-slate-800/30 transition">
+                    <td className="py-3.5 px-4 text-center font-bold">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-800 text-slate-300 text-xs">
+                        {idx + 1}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 font-sans font-bold text-white">
+                      {sup.name}
+                    </td>
+                    <td className="py-3.5 px-4 text-center text-slate-400 font-sans">
+                      {sup.tiendasCount} tiendas
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
+                        sup.cumplimientoPorcentaje >= 95
+                          ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/60'
+                          : sup.cumplimientoPorcentaje >= 75
+                          ? 'bg-amber-950/60 text-amber-400 border border-amber-800/60'
+                          : 'bg-rose-950/60 text-rose-400 border border-rose-800/60'
+                      }`}>
+                        {sup.cumplimientoPorcentaje}%
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-right text-slate-300">
+                      {INT.format(sup.comandas)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-bold text-amber-400">
+                      {ARS.format(sup.venta)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right text-slate-300">
+                      {INT.format(sup.unidades)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right text-emerald-400 font-semibold">
+                      {sup.ticketPromedio ? ARS.format(sup.ticketPromedio) : '–'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Tabla Detallada por Tienda (con columnas ordenables) */}
+      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div className="p-4 sm:p-5 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <Store className="w-4 h-4 text-amber-400" />
+              <span>Desempeño y Cumplimiento por Tienda</span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              Totales acumulados del rango seleccionado ({startDate} al {endDate}). Tocá cualquier columna para ordenar.
+            </p>
+          </div>
+          <div className="text-xs text-slate-400 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 font-mono">
+            {sortedStores.length} tiendas analizadas
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm font-mono-numbers">
+            <thead className="bg-slate-950/80 text-[11px] uppercase tracking-wider font-semibold text-slate-400 border-b border-slate-800">
+              <tr>
+                <th className="py-3 px-4 w-12 text-center">#</th>
+                <th className="py-3 px-4 font-sans cursor-pointer hover:text-white" onClick={() => handleSort('name')}>
+                  <div className="flex items-center gap-1">
+                    <span>Tienda</span>
+                    {sortField === 'name' && <ArrowUpDown className="w-3 h-3 text-amber-400" />}
+                  </div>
+                </th>
+                <th className="py-3 px-4 text-center cursor-pointer hover:text-white" onClick={() => handleSort('diasCargados')}>
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Días Cargados</span>
+                    {sortField === 'diasCargados' && <ArrowUpDown className="w-3 h-3 text-amber-400" />}
+                  </div>
+                </th>
+                <th className="py-3 px-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('comandas')}>
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Comandas</span>
+                    {sortField === 'comandas' && <ArrowUpDown className="w-3 h-3 text-amber-400" />}
+                  </div>
+                </th>
+                <th className="py-3 px-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('venta')}>
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Venta Total</span>
+                    {sortField === 'venta' && <ArrowUpDown className="w-3 h-3 text-amber-400" />}
+                  </div>
+                </th>
+                <th className="py-3 px-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('unidades')}>
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Unidades</span>
+                    {sortField === 'unidades' && <ArrowUpDown className="w-3 h-3 text-amber-400" />}
+                  </div>
+                </th>
+                <th className="py-3 px-4 text-right cursor-pointer hover:text-white" onClick={() => handleSort('ticketPromedio')}>
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Ticket Prom.</span>
+                    {sortField === 'ticketPromedio' && <ArrowUpDown className="w-3 h-3 text-amber-400" />}
+                  </div>
+                </th>
+                <th className="py-3 px-4 text-right">Unid./Comanda</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/50">
+              {sortedStores.map((store, idx) => (
+                <tr key={store.id} className="hover:bg-slate-800/30 transition">
+                  <td className="py-3.5 px-4 text-center font-bold">
+                    <span
+                      className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                        idx === 0
+                          ? 'bg-amber-500 text-slate-950'
+                          : idx === 1
+                          ? 'bg-slate-300 text-slate-900'
+                          : idx === 2
+                          ? 'bg-amber-800 text-amber-200'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {idx + 1}
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <div className="font-sans font-bold text-white flex items-center gap-2">
+                      <span>{store.name}</span>
+                      {store.isPropia && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          Propia
+                        </span>
+                      )}
+                      {store.isExperience && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                          Experience
+                        </span>
+                      )}
+                    </div>
+                    {store.supervisoraNombre && (
+                      <div className="text-xs text-slate-400 font-sans mt-0.5">
+                        {store.supervisoraNombre}
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-3.5 px-4 text-center">
+                    <span
+                      className={`text-xs px-2.5 py-1 rounded-full font-bold ${
+                        store.diasCargados === store.diasEsperados && store.diasEsperados > 0
+                          ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/60'
+                          : store.diasCargados === 0
+                          ? 'bg-rose-950/60 text-rose-400 border border-rose-800/60'
+                          : 'bg-amber-950/60 text-amber-400 border border-amber-800/60'
+                      }`}
+                    >
+                      {store.diasCargados}/{store.diasEsperados}
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 text-right text-slate-300">{INT.format(store.comandas)}</td>
+                  <td className="py-3.5 px-4 text-right font-bold text-amber-400">{ARS.format(store.venta)}</td>
+                  <td className="py-3.5 px-4 text-right text-slate-300">{INT.format(store.unidades)}</td>
+                  <td className="py-3.5 px-4 text-right text-emerald-400 font-semibold">
+                    {store.ticketPromedio ? ARS.format(store.ticketPromedio) : '–'}
+                  </td>
+                  <td className="py-3.5 px-4 text-right text-slate-300">
+                    {store.unidPorComanda ? DEC.format(store.unidPorComanda) : '–'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Detalle Día por Día dentro del Rango */}
+      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div className="p-4 sm:p-5 border-b border-slate-800/80">
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-amber-400" />
+            <span>Evolución Diaria en el Período</span>
+          </h3>
+          <p className="text-xs text-slate-400">Comportamiento día por día dentro de las fechas seleccionadas</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm font-mono-numbers">
+            <thead className="bg-slate-950/80 text-[11px] uppercase tracking-wider font-semibold text-slate-400 border-b border-slate-800">
+              <tr>
+                <th className="py-3 px-4 font-sans">Fecha</th>
+                <th className="py-3 px-4 text-center">Tiendas Cargadas</th>
+                <th className="py-3 px-4 text-right">Comandas</th>
+                <th className="py-3 px-4 text-right">Venta Diaria</th>
+                <th className="py-3 px-4 text-right">Unidades</th>
+                <th className="py-3 px-4 text-right">Ticket Promedio</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/50">
+              {daysData.map((day) => {
+                const dayTicket = day.comandas > 0 ? day.venta / day.comandas : null;
+                return (
+                  <tr key={day.fecha} className="hover:bg-slate-800/30 transition">
+                    <td className="py-3.5 px-4 font-sans font-semibold text-white">
+                      {fmtDay(day.fecha)}
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span
+                        className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
+                          day.tiendasCargadas === day.totalTiendas
+                            ? 'text-emerald-400 bg-emerald-950/40 border border-emerald-800/40'
+                            : 'text-amber-400 bg-amber-950/40 border border-amber-800/40'
+                        }`}
+                      >
+                        {day.tiendasCargadas}/{day.totalTiendas}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-right text-slate-300">{INT.format(day.comandas)}</td>
+                    <td className="py-3.5 px-4 text-right font-bold text-amber-400">{ARS.format(day.venta)}</td>
+                    <td className="py-3.5 px-4 text-right text-slate-300">{INT.format(day.unidades)}</td>
+                    <td className="py-3.5 px-4 text-right text-emerald-400 font-semibold">
+                      {dayTicket ? ARS.format(dayTicket) : '–'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

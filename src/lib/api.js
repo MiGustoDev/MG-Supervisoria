@@ -282,6 +282,47 @@ export const api = {
     return all.filter((r) => r.fecha && r.fecha.startsWith(mes));
   },
 
+  // Cargas por rango de fechas (desde - hasta en formato YYYY-MM-DD)
+  async getCargasRango(fechaDesde, fechaHasta) {
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('mg_cargas')
+          .select('*')
+          .gte('fecha', fechaDesde)
+          .lte('fecha', fechaHasta)
+          .order('fecha', { ascending: false });
+        if (!error && Array.isArray(data)) {
+          return data.map((row) => ({
+            id: row.id,
+            tiendaId: row.tienda_id,
+            tiendaNombre: row.tienda_nombre,
+            supervisoraId: row.supervisora_id,
+            supervisoraNombre: row.supervisora_nombre,
+            fecha: row.fecha,
+            mes: row.mes,
+            comandas: Number(row.comandas),
+            venta: Number(row.venta),
+            unidades: Number(row.unidades),
+            ticketPromedio: row.ticket_promedio,
+            unidadesPorComanda: row.unidades_por_comanda,
+            cargadoEn: row.cargado_en,
+            cargadoPor: row.cargado_por,
+            modificadoPor: row.modificado_por,
+            modificadoEn: row.modificado_en,
+          }));
+        }
+      } catch (e) {
+        console.warn('Supabase getCargasRango error, using local fallback:', e);
+      }
+    }
+
+    const localRaw = localStorage.getItem(LS_CARGAS_KEY);
+    const all = localRaw ? JSON.parse(localRaw) : [];
+    return all.filter((r) => r.fecha && r.fecha >= fechaDesde && r.fecha <= fechaHasta);
+  },
+
   // Obtener todas las cargas registradas (para historial administrativo)
   async getAllCargas() {
     const supabase = getSupabase();

@@ -1,8 +1,19 @@
 export const ARS = new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
 });
+
+export function formatMoneyInput(val) {
+  if (val === null || val === undefined || val === '') return '';
+  const num = Number(val);
+  if (isNaN(num)) return String(val);
+  return num.toLocaleString('es-AR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
 
 export const INT = new Intl.NumberFormat('es-AR');
 
@@ -47,9 +58,45 @@ export const fmtDayLong = (s) => {
 export function parseMoney(raw) {
   let s = String(raw || '').replace(/[\s$]/g, '');
   if (!s) return NaN;
-  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
-  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
-  return /^\d+(\.\d{1,2})?$/.test(s) ? Number(s) : NaN;
+
+  // Caso 1: Tiene puntos y comas (ej: "1.669.515,41" o "1,669,515.41")
+  if (s.includes('.') && s.includes(',')) {
+    const lastDot = s.lastIndexOf('.');
+    const lastComma = s.lastIndexOf(',');
+    if (lastComma > lastDot) {
+      // Estilo argentino/europeo: puntos miles, coma decimal -> 1.669.515,41
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      // Estilo anglosajón: comas miles, punto decimal -> 1,669,515.41
+      s = s.replace(/,/g, '');
+    }
+  } else if (s.includes(',')) {
+    // Caso 2: Solo tiene coma(s).
+    // Si tiene una sola coma y 1 o 2 dígitos al final (o más), actúa como separador decimal.
+    // Ej: "1669515,41" -> 1669515.41
+    const commaCount = (s.match(/,/g) || []).length;
+    if (commaCount === 1) {
+      s = s.replace(',', '.');
+    } else {
+      // Múltiples comas como separador de miles
+      s = s.replace(/,/g, '');
+    }
+  } else if (s.includes('.')) {
+    // Caso 3: Solo tiene punto(s).
+    // Si tiene un único punto y 1 o 2 decimales al final (ej: "1669515.41"), es decimal.
+    // Si tiene patrón de miles "1.669.515" o múltiples puntos, son miles.
+    const parts = s.split('.');
+    if (parts.length === 2 && parts[1].length !== 3) {
+      // Probablemente decimal (ej: "50000.5" o "1500.50")
+      // s se mantiene con su punto
+    } else {
+      // Puntos de miles (ej: "1.669.515" o "50.000")
+      s = s.replace(/\./g, '');
+    }
+  }
+
+  const num = Number(s);
+  return !isNaN(num) && num >= 0 ? num : NaN;
 }
 
 export function parseCount(raw) {

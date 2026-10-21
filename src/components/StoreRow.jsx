@@ -90,12 +90,12 @@ export function StoreRow({
         </div>
       </div>
 
-      {/* Inputs grid */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+      {/* Inputs grid: Asymmetrical layout giving more space to Venta ($) to fit 7-8 digits + decimals without overflow */}
+      <div className="grid grid-cols-[1fr_1.55fr_1fr] sm:grid-cols-[1fr_1.4fr_1fr] gap-1.5 sm:gap-3">
         {/* Comandas */}
         <div>
-          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-            Comandas
+          <label className="block text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 truncate">
+            Cmdas.
           </label>
           <input
             type="text"
@@ -103,7 +103,7 @@ export function StoreRow({
             value={rc}
             placeholder="0"
             onChange={(e) => onChange(tienda.id, 'c', e.target.value)}
-            className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-white font-mono-numbers text-base sm:text-lg font-bold focus:outline-none transition ${
+            className={`w-full bg-slate-950 border rounded-xl px-2 sm:px-3 py-2 text-white font-mono-numbers text-sm sm:text-base font-bold focus:outline-none transition ${
               rc && isNaN(c)
                 ? 'border-rose-500 text-rose-300 bg-rose-950/20'
                 : 'border-slate-800 focus:border-amber-500'
@@ -113,7 +113,7 @@ export function StoreRow({
 
         {/* Venta */}
         <div>
-          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 truncate">
             Venta ($)
           </label>
           <input
@@ -122,7 +122,7 @@ export function StoreRow({
             value={rv}
             placeholder="0"
             onChange={(e) => onChange(tienda.id, 'v', e.target.value)}
-            className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-white font-mono-numbers text-base sm:text-lg font-bold focus:outline-none transition ${
+            className={`w-full bg-slate-950 border rounded-xl px-2 sm:px-3 py-2 text-white font-mono-numbers text-xs sm:text-base font-bold focus:outline-none transition tracking-tight ${
               rv && isNaN(v)
                 ? 'border-rose-500 text-rose-300 bg-rose-950/20'
                 : 'border-slate-800 focus:border-amber-500'
@@ -132,7 +132,7 @@ export function StoreRow({
 
         {/* Unidades */}
         <div>
-          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+          <label className="block text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 truncate">
             Unidades
           </label>
           <input
@@ -141,7 +141,7 @@ export function StoreRow({
             value={ru}
             placeholder="0"
             onChange={(e) => onChange(tienda.id, 'u', e.target.value)}
-            className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-white font-mono-numbers text-base sm:text-lg font-bold focus:outline-none transition ${
+            className={`w-full bg-slate-950 border rounded-xl px-2 sm:px-3 py-2 text-white font-mono-numbers text-sm sm:text-base font-bold focus:outline-none transition ${
               ru && isNaN(u)
                 ? 'border-rose-500 text-rose-300 bg-rose-950/20'
                 : 'border-slate-800 focus:border-amber-500'
