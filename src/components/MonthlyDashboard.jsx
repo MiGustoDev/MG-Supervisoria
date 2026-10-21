@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ARS, INT, DEC, fmtDay } from '../lib/formatters';
 import { CustomMonthPicker } from './CustomMonthPicker';
 import { Calendar, DollarSign, Receipt, ShoppingBag, Target, FileText } from 'lucide-react';
+import { gsap, useGSAP } from '../lib/animations';
+import { AnimatedNumber } from './AnimatedNumber';
 
 export function MonthlyDashboard({
   month,
@@ -14,6 +16,25 @@ export function MonthlyDashboard({
   onExportMonthPdf,
   onExportMonthCsv,
 }) {
+  const kpiGridRef = useRef(null);
+  const storesTableRef = useRef(null);
+
+  useGSAP(() => {
+    if (kpiGridRef.current) {
+      gsap.fromTo(
+        kpiGridRef.current.children,
+        { opacity: 0, y: 12, scale: 0.98 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.06, ease: 'power2.out', clearProps: 'transform' }
+      );
+    }
+    if (storesTableRef.current && storesTableRef.current.children.length > 0) {
+      gsap.fromTo(
+        storesTableRef.current.children,
+        { opacity: 0, x: -8 },
+        { opacity: 1, x: 0, duration: 0.35, stagger: 0.02, ease: 'power2.out', clearProps: 'transform' }
+      );
+    }
+  }, [month, storesMonthly.length]);
   return (
     <div className="space-y-6 mt-12 pt-8 border-t border-slate-800">
       {/* Top Header */}
@@ -36,77 +57,154 @@ export function MonthlyDashboard({
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 font-mono-numbers">
+      <div ref={kpiGridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 font-mono-numbers">
         {/* Venta Acumulada */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition" />
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
-              Venta Mes
-            </span>
-            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
-              <DollarSign className="w-4 h-4" />
+        <div className="bg-slate-900/90 border border-slate-800/90 hover:border-emerald-500/40 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between gsap-card shadow-xl group min-h-[175px]">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 shadow-sm shrink-0">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 font-sans">
+                  Venta Total Mes
+                </p>
+                <p className="text-[10px] text-slate-500 font-sans">
+                  Facturación acumulada
+                </p>
+              </div>
             </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-sans">
+              Facturación
+            </span>
           </div>
-          <div className="text-lg sm:text-2xl font-black text-white">
-            {ARS.format(kpis.venta)}
+
+          <div className="my-2">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-emerald-400 tracking-tight">
+              <AnimatedNumber value={kpis.venta} formatter={(v) => ARS.format(v)} />
+            </p>
           </div>
-          <div className="text-xs text-slate-500 mt-1 font-sans">
-            Ticket Promedio: {kpis.ticketPromedio ? ARS.format(kpis.ticketPromedio) : '–'}
+
+          <div className="text-[11px] text-slate-400 font-sans flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+            <span>Ticket promedio</span>
+            <span className="font-bold text-emerald-300 font-mono-numbers">
+              {kpis.ticketPromedio ? (
+                <AnimatedNumber value={kpis.ticketPromedio} formatter={(v) => ARS.format(v)} />
+              ) : (
+                '–'
+              )}
+            </span>
           </div>
         </div>
 
         {/* Comandas Totales */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
-              Comandas
-            </span>
-            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
-              <Receipt className="w-4 h-4" />
+        <div className="bg-slate-900/90 border border-slate-800/90 hover:border-blue-500/40 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between gsap-card shadow-xl group min-h-[175px]">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/20 shadow-sm shrink-0">
+                <Receipt className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 font-sans">
+                  Comandas Totales
+                </p>
+                <p className="text-[10px] text-slate-500 font-sans">
+                  Pedidos acumulados
+                </p>
+              </div>
             </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-sans">
+              Tickets
+            </span>
           </div>
-          <div className="text-lg sm:text-2xl font-black text-white">
-            {INT.format(kpis.comandas)}
+
+          <div className="my-2">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+              <AnimatedNumber value={kpis.comandas} formatter={(v) => INT.format(v)} />
+            </p>
           </div>
-          <div className="text-xs text-slate-500 mt-1 font-sans">
-            {kpis.cargasRealizadas} cargas guardadas
+
+          <div className="text-[11px] text-slate-400 font-sans flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+            <span>Cargas registradas</span>
+            <span className="font-bold text-blue-300 font-mono-numbers">
+              {kpis.cargasRealizadas} guardadas
+            </span>
           </div>
         </div>
 
         {/* Unidades Totales */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
-              Unidades
-            </span>
-            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
-              <ShoppingBag className="w-4 h-4" />
+        <div className="bg-slate-900/90 border border-slate-800/90 hover:border-purple-500/40 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between gsap-card shadow-xl group min-h-[175px]">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/20 shadow-sm shrink-0">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 font-sans">
+                  Unidades Totales
+                </p>
+                <p className="text-[10px] text-slate-500 font-sans">
+                  Empanadas acumuladas
+                </p>
+              </div>
             </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-sans">
+              Empanadas
+            </span>
           </div>
-          <div className="text-lg sm:text-2xl font-black text-white">
-            {INT.format(kpis.unidades)}
+
+          <div className="my-2">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-purple-300 tracking-tight">
+              <AnimatedNumber value={kpis.unidades} formatter={(v) => INT.format(v)} />
+            </p>
           </div>
-          <div className="text-xs text-slate-500 mt-1 font-sans">
-            {kpis.unidPorComanda ? `${DEC.format(kpis.unidPorComanda)} por comanda` : '–'}
+
+          <div className="text-[11px] text-slate-400 font-sans flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+            <span>Unidades por comanda</span>
+            <span className="font-bold text-purple-300 font-mono-numbers">
+              {kpis.unidPorComanda ? (
+                <>
+                  <AnimatedNumber value={kpis.unidPorComanda} decimals={1} formatter={(v) => DEC.format(v)} /> unid.
+                </>
+              ) : (
+                '–'
+              )}
+            </span>
           </div>
         </div>
 
         {/* Cumplimiento de Carga */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5 relative overflow-hidden group">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
-              Cumplimiento
-            </span>
-            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
-              <Target className="w-4 h-4" />
+        <div className="bg-slate-900/90 border border-slate-800/90 hover:border-teal-500/40 rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between gsap-card shadow-xl group min-h-[175px]">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-teal-500/15 text-teal-400 border border-teal-500/20 shadow-sm shrink-0">
+                <Target className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 font-sans">
+                  Cumplimiento
+                </p>
+                <p className="text-[10px] text-slate-500 font-sans">
+                  Meta operativa mensual
+                </p>
+              </div>
             </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20 font-sans">
+              Objetivo
+            </span>
           </div>
-          <div className="text-lg sm:text-2xl font-black text-emerald-400">
-            {kpis.cumplimientoPorcentaje}%
+
+          <div className="my-2">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-teal-300 tracking-tight">
+              <AnimatedNumber value={kpis.cumplimientoPorcentaje} formatter={(v) => `${v}%`} />
+            </p>
           </div>
-          <div className="text-xs text-slate-500 mt-1 font-sans">
-            {kpis.cargasRealizadas}/{kpis.cargasEsperadas} esperadas
+
+          <div className="text-[11px] text-slate-400 font-sans flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+            <span>Cargas esperadas</span>
+            <span className="font-bold text-teal-300 font-mono-numbers">
+              {kpis.cargasRealizadas}/{kpis.cargasEsperadas}
+            </span>
           </div>
         </div>
       </div>
@@ -171,7 +269,7 @@ export function MonthlyDashboard({
                 <th className="py-3 px-4 text-right">Unid./Comanda</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50">
+            <tbody ref={storesTableRef} className="divide-y divide-slate-800/50">
               {storesMonthly.map((store, idx) => (
                 <tr key={store.id} className="hover:bg-slate-800/30 transition">
                   <td className="py-3.5 px-4 text-center font-bold">

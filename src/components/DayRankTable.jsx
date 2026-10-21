@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ARS, INT } from '../lib/formatters';
 import { Trophy, TrendingUp, Layers } from 'lucide-react';
+import { gsap, useGSAP } from '../lib/animations';
 
 export function DayRankTable({
   rankedList,
@@ -8,6 +9,18 @@ export function DayRankTable({
   onMetricChange,
   dateTitle,
 }) {
+  const tbodyRef = useRef(null);
+
+  useGSAP(() => {
+    if (tbodyRef.current && tbodyRef.current.children.length > 0) {
+      gsap.fromTo(
+        tbodyRef.current.children,
+        { opacity: 0, x: -10 },
+        { opacity: 1, x: 0, duration: 0.35, stagger: 0.025, ease: 'power2.out', clearProps: 'transform' }
+      );
+    }
+  }, [metric, rankedList.length]);
+
   const metricOptions = [
     { value: 'v', label: 'Venta' },
     { value: 'c', label: 'Comandas' },
@@ -83,7 +96,7 @@ export function DayRankTable({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/50">
+          <tbody ref={tbodyRef} className="divide-y divide-slate-800/50">
             {rankedList.map((item, idx) => {
               const currentVal =
                 metric === 'v'

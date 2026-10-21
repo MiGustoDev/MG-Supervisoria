@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Database, Copy, Check, ExternalLink, X, AlertCircle } from 'lucide-react';
 import { getSupabaseCredentials, saveSupabaseCredentials, SUPABASE_SETUP_SQL } from '../lib/supabase';
+import { animateModalEnter } from '../lib/animations';
 
 export function DatabaseModal({ isOpen, onClose }) {
   const creds = getSupabaseCredentials();
   const [url, setUrl] = useState(creds.url);
   const [key, setKey] = useState(creds.key);
   const [copiedSql, setCopiedSql] = useState(false);
+  const backdropRef = useRef(null);
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && modalRef.current && backdropRef.current) {
+      animateModalEnter(modalRef.current, backdropRef.current);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -22,8 +31,14 @@ export function DatabaseModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div
+      ref={backdropRef}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+    >
+      <div
+        ref={modalRef}
+        className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/50">
           <div className="flex items-center gap-3">

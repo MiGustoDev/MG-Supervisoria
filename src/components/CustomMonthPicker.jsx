@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { animatePopoverEnter, animatePopoverExit } from '../lib/animations';
 
 const MONTH_NAMES = [
   'Enero',
@@ -19,6 +20,23 @@ const MONTH_NAMES = [
 export function CustomMonthPicker({ value, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+  const popoverRef = useRef(null);
+
+  const closeDropdown = () => {
+    if (popoverRef.current) {
+      animatePopoverExit(popoverRef.current, () => {
+        setIsOpen(false);
+      });
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && popoverRef.current) {
+      animatePopoverEnter(popoverRef.current);
+    }
+  }, [isOpen]);
 
   // value is format 'YYYY-MM'
   const [currentYear, setCurrentYear] = useState(() => {
@@ -35,7 +53,7 @@ export function CustomMonthPicker({ value, onChange }) {
   useEffect(() => {
     function handleClickOutside(e) {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsOpen(false);
+        closeDropdown();
       }
     }
     if (isOpen) {
@@ -47,7 +65,7 @@ export function CustomMonthPicker({ value, onChange }) {
   const handleSelectMonth = (monthIndex) => {
     const formatted = `${currentYear}-${String(monthIndex + 1).padStart(2, '0')}`;
     onChange(formatted);
-    setIsOpen(false);
+    closeDropdown();
   };
 
   const displayText = `${MONTH_NAMES[selectedMonthNum]} ${selectedYear}`;
@@ -57,7 +75,13 @@ export function CustomMonthPicker({ value, onChange }) {
       {/* Trigger button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (isOpen) {
+            closeDropdown();
+          } else {
+            setIsOpen(true);
+          }
+        }}
         className="flex items-center gap-2 bg-slate-950 border border-slate-800 hover:border-amber-500/50 rounded-xl px-3.5 py-1.5 text-xs text-amber-400 font-extrabold focus:outline-none transition shadow-inner group"
       >
         <Calendar className="w-3.5 h-3.5 text-amber-400" />
@@ -66,7 +90,10 @@ export function CustomMonthPicker({ value, onChange }) {
 
       {/* Popover Dropdown */}
       {isOpen && (
-        <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-slate-700 rounded-3xl p-4 sm:p-5 shadow-2xl shadow-black/95 backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+        <div
+          ref={popoverRef}
+          className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-slate-700 rounded-3xl p-4 sm:p-5 shadow-2xl shadow-black/95 backdrop-blur-2xl z-50 origin-top"
+        >
           {/* Year selector header */}
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
             <button

@@ -55,9 +55,17 @@ export const fmtDayLong = (s) => {
   return `${w.charAt(0).toUpperCase() + w.slice(1)} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 };
 
+export function formatThousands(raw) {
+  if (raw === null || raw === undefined || raw === '') return '';
+  const clean = String(raw).replace(/\D/g, '');
+  if (!clean) return '';
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 export function parseMoney(raw) {
   let s = String(raw || '').replace(/[\s$]/g, '');
   if (!s) return NaN;
+<<<<<<< HEAD
 
   // Caso 1: Tiene puntos y comas (ej: "1.669.515,41" o "1,669,515.41")
   if (s.includes('.') && s.includes(',')) {
@@ -97,6 +105,14 @@ export function parseMoney(raw) {
 
   const num = Number(s);
   return !isNaN(num) && num >= 0 ? num : NaN;
+=======
+  if (s.includes(',')) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else {
+    s = s.replace(/\./g, '');
+  }
+  return /^\d+(\.\d{1,2})?$/.test(s) ? Number(s) : NaN;
+>>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
 }
 
 export function parseCount(raw) {

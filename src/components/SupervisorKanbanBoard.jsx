@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Users,
   Store,
@@ -12,11 +12,24 @@ import {
   Search,
 } from 'lucide-react';
 import { isUserAdmin, canUserManageStores } from '../lib/auth';
+import { gsap, useGSAP } from '../lib/animations';
+import { UserAvatar } from './UserAvatar';
 
 export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
   const [draggedStoreId, setDraggedStoreId] = useState(null);
   const [dragOverColId, setDragOverColId] = useState(null);
   const [searchFilter, setSearchFilter] = useState('');
+  const gridRef = useRef(null);
+
+  useGSAP(() => {
+    if (gridRef.current && gridRef.current.children.length > 0) {
+      gsap.fromTo(
+        gridRef.current.children,
+        { opacity: 0, y: 14, scale: 0.98 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.05, ease: 'power2.out', clearProps: 'transform' }
+      );
+    }
+  }, [config.supervisoras?.length]);
 
   const supervisoras = config.supervisoras || [];
   const tiendas = config.tiendas || [];
@@ -170,7 +183,7 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
               onDragOver={(e) => handleDragOver(e, col.id)}
               onDragLeave={(e) => handleDragLeave(e, col.id)}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`flex flex-col rounded-2xl border transition-all duration-200 overflow-hidden ${
+              className={`flex flex-col rounded-2xl border gsap-card overflow-hidden ${
                 isOver
                   ? 'bg-slate-800/80 border-amber-500 shadow-2xl shadow-amber-500/10 scale-[1.01]'
                   : col.isCurrentLoggedUser
@@ -190,11 +203,12 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div
-                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br ${col.avatarColor} flex items-center justify-center font-extrabold text-white text-xs sm:text-sm shadow-md shrink-0`}
-                  >
-                    {col.name.charAt(0)}
-                  </div>
+                  <UserAvatar
+                    user={col}
+                    name={col.name}
+                    avatarColor={col.avatarColor}
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl"
+                  />
                   <div className="min-w-0 flex-1">
                     <h4 className="font-extrabold text-white text-xs sm:text-sm leading-snug truncate">
                       {col.name}
@@ -294,7 +308,7 @@ export function SupervisorKanbanBoard({ config, onUpdateConfig, currentUser }) {
         };
 
         return (
-          <div className="space-y-6">
+          <div ref={gridRef} className="space-y-6">
             {/* Primary Zones (Supervisors with multiple stores) */}
             {multiStoreColumns.length > 0 && (
               <div>

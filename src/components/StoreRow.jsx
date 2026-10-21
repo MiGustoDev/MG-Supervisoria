@@ -1,6 +1,6 @@
 import React from 'react';
 import { Store, CheckCircle, AlertCircle, TrendingUp, Layers } from 'lucide-react';
-import { ARS, DEC, INT } from '../lib/formatters';
+import { ARS, DEC, INT, formatThousands } from '../lib/formatters';
 
 export function StoreRow({
   tienda,
@@ -10,6 +10,19 @@ export function StoreRow({
   isDirty,
 }) {
   const { rc, rv, ru, c, v, u, errs, complete } = values;
+
+  const handleNumericChange = (field, raw) => {
+    if (!raw.trim()) {
+      onChange(tienda.id, field, '');
+      return;
+    }
+    const digits = raw.replace(/\D/g, '');
+    if (!digits) {
+      onChange(tienda.id, field, '');
+      return;
+    }
+    onChange(tienda.id, field, formatThousands(digits));
+  };
 
   const hasComandas = !isNaN(c) && c > 0;
   const ticketPromedio = hasComandas && !isNaN(v) ? v / c : null;
@@ -44,11 +57,11 @@ export function StoreRow({
 
   return (
     <div
-      className={`relative p-4 sm:p-5 rounded-2xl border transition-all duration-200 ${
+      className={`store-row-item relative p-4 sm:p-5 rounded-2xl border gsap-card ${
         isDirty
-          ? 'bg-slate-900/90 border-amber-500/40 shadow-lg shadow-amber-500/5'
+          ? 'bg-slate-900/95 border-amber-500/50 shadow-xl shadow-amber-500/10'
           : savedData
-          ? 'bg-slate-900/50 border-slate-800/80 hover:border-slate-700/80'
+          ? 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700/90'
           : 'bg-slate-900/30 border-slate-800/40 opacity-90'
       }`}
     >
@@ -102,8 +115,13 @@ export function StoreRow({
             inputMode="numeric"
             value={rc}
             placeholder="0"
+<<<<<<< HEAD
             onChange={(e) => onChange(tienda.id, 'c', e.target.value)}
             className={`w-full bg-slate-950 border rounded-xl px-2 sm:px-3 py-2 text-white font-mono-numbers text-sm sm:text-base font-bold focus:outline-none transition ${
+=======
+            onChange={(e) => handleNumericChange('c', e.target.value)}
+            className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-white font-mono-numbers text-base sm:text-lg font-bold focus:outline-none transition ${
+>>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
               rc && isNaN(c)
                 ? 'border-rose-500 text-rose-300 bg-rose-950/20'
                 : 'border-slate-800 focus:border-amber-500'
@@ -118,11 +136,16 @@ export function StoreRow({
           </label>
           <input
             type="text"
-            inputMode="decimal"
+            inputMode="numeric"
             value={rv}
             placeholder="0"
+<<<<<<< HEAD
             onChange={(e) => onChange(tienda.id, 'v', e.target.value)}
             className={`w-full bg-slate-950 border rounded-xl px-2 sm:px-3 py-2 text-white font-mono-numbers text-xs sm:text-base font-bold focus:outline-none transition tracking-tight ${
+=======
+            onChange={(e) => handleNumericChange('v', e.target.value)}
+            className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-white font-mono-numbers text-base sm:text-lg font-bold focus:outline-none transition ${
+>>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
               rv && isNaN(v)
                 ? 'border-rose-500 text-rose-300 bg-rose-950/20'
                 : 'border-slate-800 focus:border-amber-500'
@@ -140,8 +163,13 @@ export function StoreRow({
             inputMode="numeric"
             value={ru}
             placeholder="0"
+<<<<<<< HEAD
             onChange={(e) => onChange(tienda.id, 'u', e.target.value)}
             className={`w-full bg-slate-950 border rounded-xl px-2 sm:px-3 py-2 text-white font-mono-numbers text-sm sm:text-base font-bold focus:outline-none transition ${
+=======
+            onChange={(e) => handleNumericChange('u', e.target.value)}
+            className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-white font-mono-numbers text-base sm:text-lg font-bold focus:outline-none transition ${
+>>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
               ru && isNaN(u)
                 ? 'border-rose-500 text-rose-300 bg-rose-950/20'
                 : 'border-slate-800 focus:border-amber-500'

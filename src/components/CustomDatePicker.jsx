@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { pad, getYesterdayStr, todayStr } from '../lib/formatters';
+import { animatePopoverEnter, animatePopoverExit } from '../lib/animations';
 
 const MONTH_NAMES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -12,6 +13,23 @@ const DAY_NAMES = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'];
 export function CustomDatePicker({ value, onChange, minDate, maxDate, compact = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+  const popoverRef = useRef(null);
+
+  const closeDropdown = () => {
+    if (popoverRef.current) {
+      animatePopoverExit(popoverRef.current, () => {
+        setIsOpen(false);
+      });
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && popoverRef.current) {
+      animatePopoverEnter(popoverRef.current);
+    }
+  }, [isOpen]);
 
   // Parse current selected date
   const [selYear, selMonth, selDay] = (value || getYesterdayStr()).split('-').map(Number);
@@ -24,7 +42,7 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, compact = 
   useEffect(() => {
     function handleClickOutside(e) {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsOpen(false);
+        closeDropdown();
       }
     }
     if (isOpen) {
@@ -109,7 +127,7 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, compact = 
   const handleSelectDay = (dateStr) => {
     if (dateStr > maxLimit || (minLimit && dateStr < minLimit)) return;
     onChange(dateStr);
-    setIsOpen(false);
+    closeDropdown();
   };
 
   const [y, m, d] = (value || yday).split('-');
@@ -119,7 +137,13 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, compact = 
       {/* Trigger Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (isOpen) {
+            closeDropdown();
+          } else {
+            setIsOpen(true);
+          }
+        }}
         className={`w-full bg-slate-900 border border-slate-700 hover:border-amber-400 focus:border-amber-400 text-white font-mono-numbers flex items-center justify-between cursor-pointer transition group ${
           compact
             ? 'rounded-xl px-3 py-2 text-xs font-bold'
@@ -149,7 +173,10 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, compact = 
 
       {/* Custom Dropdown Modal / Popover */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-50 w-[calc(100vw-48px)] sm:w-80 max-w-[340px] bg-slate-900 border border-slate-700/80 rounded-2xl p-4 shadow-2xl shadow-black/80 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+        <div
+          ref={popoverRef}
+          className="absolute top-full left-0 mt-2 z-50 w-[calc(100vw-48px)] sm:w-80 max-w-[340px] bg-slate-900 border border-slate-700/80 rounded-2xl p-4 shadow-2xl shadow-black/80 backdrop-blur-xl origin-top-left"
+        >
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
             <span className="font-extrabold text-white text-sm font-sans tracking-tight">

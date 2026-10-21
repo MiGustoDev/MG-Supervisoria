@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, LogOut, ChevronDown, Check, ShieldCheck, Database, X, Lock } from 'lucide-react';
+import { animatePopoverEnter, animatePopoverExit } from '../lib/animations';
+import { UserAvatar } from './UserAvatar';
 
 export function Header({
   currentUser,
@@ -10,16 +12,32 @@ export function Header({
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  const closeMenu = (callback) => {
+    if (dropdownRef.current) {
+      animatePopoverExit(dropdownRef.current, () => {
+        setIsMenuOpen(false);
+        if (callback) callback();
+      });
+    } else {
+      setIsMenuOpen(false);
+      if (callback) callback();
+    }
+  };
 
   // Close side menu / dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setIsMenuOpen(false);
+        closeMenu();
       }
     }
     if (isMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      if (dropdownRef.current) {
+        animatePopoverEnter(dropdownRef.current);
+      }
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuOpen]);
@@ -48,16 +66,19 @@ export function Header({
         <div className="relative" ref={menuRef}>
           {currentUser ? (
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              onClick={() => {
+                if (isMenuOpen) {
+                  closeMenu();
+                } else {
+                  setIsMenuOpen(true);
+                }
+              }}
               className="flex items-center gap-2.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-amber-500/40 text-left transition shadow-md group"
             >
-              <div
-                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br ${
-                  currentUser.avatarColor || 'from-amber-500 to-orange-600'
-                } flex items-center justify-center font-black text-white text-xs sm:text-sm shadow-sm shrink-0`}
-              >
-                {currentUser.name ? currentUser.name.charAt(0) : 'U'}
-              </div>
+              <UserAvatar
+                user={currentUser}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl"
+              />
 
               <div className="hidden sm:block">
                 <p className="text-xs font-black text-white group-hover:text-amber-300 transition leading-tight">
@@ -86,17 +107,17 @@ export function Header({
 
           {/* User Profile Dropdown / Side Menu */}
           {isMenuOpen && currentUser && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-slate-700/80 rounded-2xl p-3 shadow-2xl shadow-black/80 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 z-50">
+            <div
+              ref={dropdownRef}
+              className="absolute right-0 top-full mt-2 w-64 bg-slate-900 border border-slate-700/80 rounded-2xl p-3 shadow-2xl shadow-black/80 backdrop-blur-xl z-50 origin-top-right"
+            >
               {/* Profile Card Header */}
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 mb-2">
                 <div className="flex items-center gap-2.5">
-                  <div
-                    className={`w-9 h-9 rounded-xl bg-gradient-to-br ${
-                      currentUser.avatarColor || 'from-amber-500 to-orange-600'
-                    } flex items-center justify-center font-black text-white text-sm shadow-sm shrink-0`}
-                  >
-                    {currentUser.name.charAt(0)}
-                  </div>
+                  <UserAvatar
+                    user={currentUser}
+                    className="w-9 h-9 rounded-xl"
+                  />
                   <div className="min-w-0">
                     <p className="text-xs font-black text-white truncate">
                       {currentUser.name}
@@ -120,10 +141,9 @@ export function Header({
                 {onOpenChangePassword && (
                   <button
                     onClick={() => {
-                      setIsMenuOpen(false);
-                      onOpenChangePassword();
+                      closeMenu(() => onOpenChangePassword());
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60 transition text-left"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60 transition text-left cursor-pointer"
                   >
                     <Lock className="w-4 h-4 text-amber-400" />
                     <span>Cambiar contraseña</span>
@@ -132,10 +152,9 @@ export function Header({
 
                 <button
                   onClick={() => {
-                    setIsMenuOpen(false);
-                    onLogout();
+                    closeMenu(() => onLogout());
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/50 transition text-left"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/50 transition text-left cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Cerrar Sesión</span>

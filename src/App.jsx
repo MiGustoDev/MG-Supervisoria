@@ -13,6 +13,9 @@ import { RangeReportDashboard } from './components/RangeReportDashboard';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { CustomDatePicker } from './components/CustomDatePicker';
 import { CustomMonthPicker } from './components/CustomMonthPicker';
+import { CustomSupervisorSelect } from './components/CustomSupervisorSelect';
+import { Footer } from './components/Footer';
+import { UserAvatar } from './components/UserAvatar';
 import { api } from './lib/api';
 import { getSupabaseCredentials } from './lib/supabase';
 import { getStoredSession, clearSession, isUserAdmin, canUserAccessHistory } from './lib/auth';
@@ -30,15 +33,24 @@ import {
   MONTHF,
   parseYmd,
   pad,
+<<<<<<< HEAD
   ymd,
+=======
+  formatThousands,
+>>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
 } from './lib/formatters';
-import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy, FileText } from 'lucide-react';
+import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy, FileText, Save, RotateCcw } from 'lucide-react';
+import { animateTabEnter, animateTabExit, animateToastEnter, gsap } from './lib/animations';
 
 const LS_SELECTED_SUP = 'mg_active_supervisora';
 const ALL_SUP = '__all';
 
 export default function App() {
   const dateInputRef = useRef(null);
+  const tabContentRef = useRef(null);
+  const toastRef = useRef(null);
+  const storeGridRef = useRef(null);
+  const rankingContentRef = useRef(null);
   const [currentUser, setCurrentUser] = useState(() => getStoredSession());
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -98,6 +110,68 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
+  const isTabChangingRef = useRef(false);
+
+  const handleTabChange = (nextTab) => {
+    if (nextTab === activeTab || isTabChangingRef.current) return;
+    if (tabContentRef.current) {
+      isTabChangingRef.current = true;
+      animateTabExit(tabContentRef.current, () => {
+        setActiveTab(nextTab);
+        isTabChangingRef.current = false;
+      });
+    } else {
+      setActiveTab(nextTab);
+    }
+  };
+
+  // GSAP: Animate tab transitions
+  useEffect(() => {
+    if (tabContentRef.current) {
+      animateTabEnter(tabContentRef.current);
+    }
+  }, [activeTab]);
+
+  const isRankingChangingRef = useRef(false);
+
+  const handleRankingViewChange = (nextView) => {
+    if (nextView === rankingView || isRankingChangingRef.current) return;
+    if (rankingContentRef.current) {
+      isRankingChangingRef.current = true;
+      animateTabExit(rankingContentRef.current, () => {
+        setRankingView(nextView);
+        isRankingChangingRef.current = false;
+      });
+    } else {
+      setRankingView(nextView);
+    }
+  };
+
+  // GSAP: Animate Ranking View transitions (Mes / Día)
+  useEffect(() => {
+    if (rankingContentRef.current) {
+      animateTabEnter(rankingContentRef.current);
+    }
+  }, [rankingView]);
+
+  // GSAP: Animate toast notification
+  useEffect(() => {
+    if (toastMessage && toastRef.current) {
+      animateToastEnter(toastRef.current);
+    }
+  }, [toastMessage]);
+
+  // GSAP: Animate store rows when supervisor or date changes
+  useEffect(() => {
+    if (activeTab === 'carga' && storeGridRef.current && storeGridRef.current.children.length > 0) {
+      gsap.fromTo(
+        storeGridRef.current.children,
+        { opacity: 0, y: 14, scale: 0.99 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.4, stagger: 0.035, ease: 'power2.out', clearProps: 'transform' }
+      );
+    }
+  }, [selectedSup, selectedFecha, activeTab]);
+
   // Permiso para ver u operar la pestaña de historial
   const canAccessHistory = canUserAccessHistory(currentUser);
 
@@ -123,9 +197,15 @@ export default function App() {
           if (!dirtyStoreIds.has(t.id)) {
             const saved = data[t.id];
             next[t.id] = {
+<<<<<<< HEAD
               rc: saved ? String(saved.comandas) : '',
               rv: saved ? formatMoneyInput(saved.venta) : '',
               ru: saved ? String(saved.unidades) : '',
+=======
+              rc: saved && saved.comandas !== undefined && saved.comandas !== null ? formatThousands(saved.comandas) : '',
+              rv: saved && saved.venta !== undefined && saved.venta !== null ? formatThousands(saved.venta) : '',
+              ru: saved && saved.unidades !== undefined && saved.unidades !== null ? formatThousands(saved.unidades) : '',
+>>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
             };
           }
         });
@@ -345,11 +425,15 @@ export default function App() {
 
     const bad = [];
     const itemsToSave = [];
+    const itemsToDelete = [];
 
     dirtyStoreIds.forEach((tid) => {
       const ev = evaluateRow(tid);
       if (ev.empty) {
-        // ignore
+        // Si la tienda ya tenía carga registrada en la BD y el usuario borró los datos, se elimina la carga
+        if (dayData[tid]) {
+          itemsToDelete.push(tid);
+        }
       } else if (ev.errs.length > 0 || !ev.complete) {
         bad.push(tid);
       } else {
@@ -373,27 +457,51 @@ export default function App() {
       return;
     }
 
-    if (itemsToSave.length === 0) {
+    if (itemsToSave.length === 0 && itemsToDelete.length === 0) {
       setDirtyStoreIds(new Set());
-      showToast('No había datos válidos que guardar.', 'info');
+      showToast('No había datos que guardar o modificar.', 'info');
       return;
     }
 
     setIsSaving(true);
     try {
-      await api.saveCargasDia(itemsToSave);
+      if (itemsToSave.length > 0) {
+        await api.saveCargasDia(itemsToSave);
+      }
+      if (itemsToDelete.length > 0) {
+        for (const tid of itemsToDelete) {
+          const existing = dayData[tid];
+          await api.deleteCargaRecord(existing?.id, tid, selectedFecha);
+        }
+      }
+
       setDirtyStoreIds(new Set());
       await loadDayData(selectedFecha);
       await loadMonthData(selectedMonth);
-      showToast(`¡Se guardaron ${itemsToSave.length} tiendas correctamente!`, 'success');
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.8 },
-      });
+      if (canAccessHistory) {
+        loadAllCargas();
+      }
+
+      let msg = '';
+      if (itemsToSave.length > 0 && itemsToDelete.length > 0) {
+        msg = `¡Se guardaron ${itemsToSave.length} tiendas y se eliminaron ${itemsToDelete.length}!`;
+      } else if (itemsToDelete.length > 0) {
+        msg = `¡Se eliminó la carga de ${itemsToDelete.length} ${itemsToDelete.length === 1 ? 'tienda' : 'tiendas'} correctamente!`;
+      } else {
+        msg = `¡Se guardaron ${itemsToSave.length} tiendas correctamente!`;
+      }
+      showToast(msg, 'success');
+
+      if (itemsToSave.length > 0) {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.8 },
+        });
+      }
     } catch (err) {
       console.error(err);
-      showToast('Hubo un error al guardar. Intentá de nuevo.', 'error');
+      showToast('Hubo un error al guardar los cambios. Intentá de nuevo.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -829,7 +937,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-24">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between">
       {/* Top Brand Navigation */}
       <Header
         currentUser={currentUser}
@@ -847,11 +955,12 @@ export default function App() {
       />
 
       {/* Main Container */}
-      <main className="max-w-[1600px] mx-auto px-2 sm:px-6 lg:px-8 pt-3 sm:pt-6">
+      <main className="max-w-[1600px] w-full mx-auto px-2 sm:px-6 lg:px-8 pt-3 sm:pt-6 flex-1 pb-16">
         {/* Toast notifications */}
         {toastMessage && (
           <div
-            className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 border animate-in slide-in-from-bottom duration-300 ${
+            ref={toastRef}
+            className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 border ${
               toastMessage.type === 'error'
                 ? 'bg-rose-950 text-rose-200 border-rose-800'
                 : toastMessage.type === 'info'
@@ -872,8 +981,8 @@ export default function App() {
         <div className="mb-6 bg-slate-900/70 p-1.5 rounded-2xl border border-slate-800 shadow-md">
           <div className={`grid gap-1 sm:flex sm:items-center sm:gap-1.5 ${canAccessHistory ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
             <button
-              onClick={() => setActiveTab('carga')}
-              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm transition text-center ${
+              onClick={() => handleTabChange('carga')}
+              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
                 activeTab === 'carga'
                   ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -884,8 +993,8 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setActiveTab('ranking')}
-              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm transition text-center ${
+              onClick={() => handleTabChange('ranking')}
+              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
                 activeTab === 'ranking'
                   ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -899,8 +1008,8 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setActiveTab('kanban')}
-              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm transition text-center ${
+              onClick={() => handleTabChange('kanban')}
+              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
                 activeTab === 'kanban'
                   ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -919,8 +1028,8 @@ export default function App() {
             {/* Pestaña Historial Exclusiva para Elizabeth y Admin */}
             {canAccessHistory && (
               <button
-                onClick={() => setActiveTab('historial')}
-                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm transition text-center ${
+                onClick={() => handleTabChange('historial')}
+                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
                   activeTab === 'historial'
                     ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
                     : 'text-purple-300/80 hover:text-white hover:bg-purple-950/40 border border-purple-900/30'
@@ -938,6 +1047,8 @@ export default function App() {
             )}
           </div>
         </div>
+
+        <div ref={tabContentRef} key={activeTab}>
 
         {activeTab === 'historial' && canAccessHistory ? (
           <HistoryRecordsSection
@@ -989,6 +1100,7 @@ export default function App() {
                 <div className="flex p-1.5 bg-slate-950 rounded-2xl border border-slate-800 shadow-inner">
                   <button
                     type="button"
+<<<<<<< HEAD
                     onClick={() => setRankingView('dia')}
                     className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
                       rankingView === 'dia'
@@ -1002,6 +1114,10 @@ export default function App() {
                     type="button"
                     onClick={() => setRankingView('mes')}
                     className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
+=======
+                    onClick={() => handleRankingViewChange('mes')}
+                    className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer active:scale-95 ${
+>>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
                       rankingView === 'mes'
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -1011,9 +1127,15 @@ export default function App() {
                   </button>
                   <button
                     type="button"
+<<<<<<< HEAD
                     onClick={() => setRankingView('rango')}
                     className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
                       rankingView === 'rango'
+=======
+                    onClick={() => handleRankingViewChange('dia')}
+                    className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer active:scale-95 ${
+                      rankingView === 'dia'
+>>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
                     }`}
@@ -1058,6 +1180,7 @@ export default function App() {
 
             {/* Content: Day Ranking OR Monthly Dashboard OR Range Report Dashboard */}
             {activeStores.length > 0 ? (
+<<<<<<< HEAD
               rankingView === 'dia' ? (
                 <DayRankTable
                   rankedList={rankedDayList}
@@ -1098,6 +1221,30 @@ export default function App() {
                   isAdmin={isUserAdmin(currentUser)}
                 />
               )
+=======
+              <div ref={rankingContentRef} key={rankingView}>
+                {rankingView === 'dia' ? (
+                  <DayRankTable
+                    rankedList={rankedDayList}
+                    metric={dayRankMetric}
+                    onMetricChange={setDayRankMetric}
+                    dateTitle={fmtDayLong(selectedFecha)}
+                  />
+                ) : (
+                  <MonthlyDashboard
+                    month={selectedMonth}
+                    onMonthChange={setSelectedMonth}
+                    kpis={monthlyData.kpis}
+                    storesMonthly={monthlyData.storesMonthly}
+                    supervisorasMonthly={monthlyData.supervisorasMonthly}
+                    daysMonthly={monthlyData.daysMonthly}
+                    isAllSupervisors={selectedSup === ALL_SUP}
+                    onExportMonthPdf={handleExportRankingPdf}
+                    onExportMonthCsv={handleExportMonthCsv}
+                  />
+                )}
+              </div>
+>>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
             ) : (
               <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
                 <p className="text-base font-semibold text-white mb-1">
@@ -1128,38 +1275,31 @@ export default function App() {
 
               {isUserAdmin(currentUser) ? (
                 /* Admin: Can select any supervisor or all stores */
-                <select
+                <CustomSupervisorSelect
                   value={selectedSup}
-                  onChange={(e) => {
+                  onChange={(newSup) => {
                     if (dirtyStoreIds.size > 0) {
                       if (!confirm('Tenés cambios sin guardar. ¿Deseas descartarlos para cambiar de supervisora?')) {
                         return;
                       }
                       setDirtyStoreIds(new Set());
                     }
-                    setSelectedSup(e.target.value);
-                    localStorage.setItem(LS_SELECTED_SUP, e.target.value);
+                    setSelectedSup(newSup);
+                    localStorage.setItem(LS_SELECTED_SUP, newSup);
                   }}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-white font-bold text-base focus:outline-none focus:border-amber-500 shadow-inner"
-                >
-                  <option value={ALL_SUP}>🌟 Todas las tiendas (Vista General)</option>
-                  {config.supervisoras.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                  supervisoras={config.supervisoras}
+                  tiendas={config.tiendas}
+                  allSupValue={ALL_SUP}
+                />
               ) : (
                 /* Supervisor: Locked strictly to their own account */
                 <div className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3 text-white font-bold text-base shadow-inner flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div
-                      className={`w-7 h-7 rounded-lg bg-gradient-to-br ${
-                        currentUser?.avatarColor || 'from-amber-500 to-orange-600'
-                      } flex items-center justify-center font-extrabold text-white text-xs`}
-                    >
-                      {currentUser?.name?.charAt(0) || 'U'}
-                    </div>
+                    <UserAvatar
+                      user={currentUser}
+                      className="w-7 h-7 rounded-lg"
+                      textClassName="text-xs font-extrabold text-white"
+                    />
                     <span>{currentUser?.name}</span>
                   </div>
                   <span className="text-xs text-amber-400 font-extrabold bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/20">
@@ -1208,7 +1348,7 @@ export default function App() {
         />
 
         {/* Store Sheet */}
-        <div className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div ref={storeGridRef} className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-4">
           {!selectedSup ? (
             <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
               <p className="text-base font-semibold text-white mb-1">
@@ -1249,59 +1389,77 @@ export default function App() {
 
         {/* Action buttons toolbar positioned directly below the store sheet */}
         {activeStores.length > 0 && (
-          <div className="mt-6 bg-slate-900/60 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-xl">
-            <div className="flex flex-col gap-3 max-w-xl mx-auto">
+          <div className="mt-6 bg-slate-900/60 border border-slate-800 rounded-3xl p-3.5 sm:p-5 shadow-xl">
+            <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-4xl mx-auto items-stretch">
               {/* Primary Save Button */}
               <button
+                type="button"
                 onClick={handleSaveDay}
                 disabled={isSaving || dirtyStoreIds.size === 0}
-                className={`w-full py-3.5 px-6 rounded-2xl font-black text-sm sm:text-base transition flex items-center justify-center gap-2 shadow-xl ${
+                className={`py-3 px-2 sm:px-4 rounded-2xl font-black text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 shadow-xl ${
                   dirtyStoreIds.size > 0
-                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/25 active:scale-[0.98]'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/25 active:scale-95 cursor-pointer'
+                    : 'bg-slate-800/80 text-slate-500 border border-slate-700/50 cursor-not-allowed opacity-60'
                 }`}
+                title={dirtyStoreIds.size > 0 ? `Guardar ${dirtyStoreIds.size} cambios` : 'No hay cambios para guardar'}
               >
-                {isSaving
-                  ? 'Guardando cambios...'
-                  : dirtyStoreIds.size > 0
-                  ? `Guardar cambios (${dirtyStoreIds.size})`
-                  : 'Guardar día'}
+                <Save className="w-4 h-4 shrink-0" />
+                <span className="truncate">
+                  {isSaving
+                    ? 'Guardando...'
+                    : dirtyStoreIds.size > 0
+                    ? `Guardar (${dirtyStoreIds.size})`
+                    : 'Guardar'}
+                </span>
               </button>
 
-              {/* Secondary Export & Share Buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={handleCopyWhatsApp}
-                  className="w-full py-3 px-4 rounded-2xl bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-800/70 text-emerald-400 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-emerald-950/30"
-                >
-                  <span className="text-base">📱</span>
-                  <span>WhatsApp</span>
-                </button>
+              {/* Discard changes button (always visible, disabled if no dirty stores) */}
+              <button
+                type="button"
+                onClick={handleDiscardChanges}
+                disabled={dirtyStoreIds.size === 0 || isSaving}
+                className={`py-3 px-2 sm:px-4 rounded-2xl font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 shadow-md ${
+                  dirtyStoreIds.size > 0
+                    ? 'bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/70 text-rose-300 hover:text-white shadow-rose-950/30 active:scale-95 cursor-pointer'
+                    : 'bg-slate-900/40 border border-slate-800/60 text-slate-600 cursor-not-allowed opacity-50'
+                }`}
+                title={dirtyStoreIds.size > 0 ? 'Descartar cambios no guardados' : 'Sin cambios pendientes para descartar'}
+              >
+                <RotateCcw className="w-4 h-4 shrink-0" />
+                <span className="truncate">Descartar</span>
+              </button>
 
-                <button
-                  onClick={handleExportDayCsv}
-                  className="w-full py-3 px-4 rounded-2xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-black/40"
-                >
-                  <span className="text-base">📊</span>
-                  <span>Excel</span>
-                </button>
-              </div>
+              {/* WhatsApp Share Button */}
+              <button
+                type="button"
+                onClick={handleCopyWhatsApp}
+                className="py-3 px-2 sm:px-4 rounded-2xl bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-800/70 text-emerald-400 font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-md shadow-emerald-950/30 cursor-pointer"
+                title="Copiar resumen para WhatsApp"
+              >
+                <span className="text-base shrink-0 leading-none">📱</span>
+                <span className="truncate">WhatsApp</span>
+              </button>
 
-              {/* Discard changes button */}
-              {dirtyStoreIds.size > 0 && (
-                <button
-                  onClick={handleDiscardChanges}
-                  className="w-full py-2 text-rose-400 hover:text-rose-300 text-xs font-bold transition text-center"
-                >
-                  Descartar
-                </button>
-              )}
+              {/* Excel Export Button */}
+              <button
+                type="button"
+                onClick={handleExportDayCsv}
+                className="py-3 px-2 sm:px-4 rounded-2xl bg-slate-950/80 hover:bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-md shadow-black/40 cursor-pointer"
+                title="Exportar a CSV / Excel"
+              >
+                <span className="text-base shrink-0 leading-none">📊</span>
+                <span className="truncate">Excel</span>
+              </button>
             </div>
           </div>
         )}
           </>
         )}
+        </div>
       </main>
+
+      {/* Screen Footer */}
+      <Footer />
 
       {/* Database Modal */}
       <DatabaseModal
