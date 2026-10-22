@@ -28,11 +28,7 @@ import {
   Check,
   ChevronDown
 } from 'lucide-react';
-<<<<<<< HEAD
-import { ARS, INT, DEC, parseYmd, pad, parseCount, parseMoney, formatMoneyInput, todayStr } from '../lib/formatters';
-=======
-import { ARS, INT, DEC, parseYmd, pad, parseCount, parseMoney, todayStr, formatThousands, MONTHF } from '../lib/formatters';
->>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
+import { ARS, INT, DEC, parseYmd, pad, parseCount, parseMoney, formatMoneyInput, todayStr, formatThousands, MONTHF } from '../lib/formatters';
 import { exportHistoryPDF } from '../lib/pdfExport';
 import { canUserDeleteRecords, canUserEditRecords } from '../lib/auth';
 import { CustomDatePicker } from './CustomDatePicker';
@@ -387,15 +383,9 @@ export function HistoryRecordsSection({
       tiendaId: record.tiendaId || '',
       supervisoraId: record.supervisoraId || '',
       fecha: record.fecha || '',
-<<<<<<< HEAD
-      comandas: String(record.comandas || ''),
-      venta: record.venta !== undefined && record.venta !== null ? formatMoneyInput(record.venta) : '',
-      unidades: String(record.unidades || ''),
-=======
       comandas: record.comandas ? formatThousands(record.comandas) : '',
-      venta: record.venta ? formatThousands(record.venta) : '',
+      venta: record.venta !== undefined && record.venta !== null ? formatMoneyInput(record.venta) : '',
       unidades: record.unidades ? formatThousands(record.unidades) : '',
->>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
       notas: record.notas || '',
     });
   };
@@ -406,15 +396,9 @@ export function HistoryRecordsSection({
       tiendaId: activeRecord.tiendaId || '',
       supervisoraId: activeRecord.supervisoraId || '',
       fecha: activeRecord.fecha || '',
-<<<<<<< HEAD
-      comandas: String(activeRecord.comandas || ''),
-      venta: activeRecord.venta !== undefined && activeRecord.venta !== null ? formatMoneyInput(activeRecord.venta) : '',
-      unidades: String(activeRecord.unidades || ''),
-=======
       comandas: activeRecord.comandas ? formatThousands(activeRecord.comandas) : '',
-      venta: activeRecord.venta ? formatThousands(activeRecord.venta) : '',
+      venta: activeRecord.venta !== undefined && activeRecord.venta !== null ? formatMoneyInput(activeRecord.venta) : '',
       unidades: activeRecord.unidades ? formatThousands(activeRecord.unidades) : '',
->>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
       notas: activeRecord.notas || '',
     });
     setEditError('');

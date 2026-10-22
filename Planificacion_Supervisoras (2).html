@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Planificación Supervisoras Mi Gusto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: panel de una columna; semana arriba, "ahora", horarios de todas (día o semana), objetivos tachables por supervisora y editor de horario */
+:root {
+  --bg: #f3f4f6;
+  --surface: #ffffff;
+  --surface-2: #eceef2;
+  --fg: #1c2230;
+  --muted: #5c6577;
+  --line: #d8dce4;
+  --accent: #a8321f;
+  --accent-soft: #f6e3df;
+  --ok: #1f7a4a;
+  --ok-soft: #dcf1e5;
+  --warn: #9a6200;
+  --warn-soft: #fbedd2;
+  --bad: #b3261e;
+  --bad-soft: #fbe1df;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sc-lidya: #a32a63; --sc-damaris: #7d1631; --sc-wanda: #e2603b; --sc-evelyn: #b07d00; --sc-selene: #0d97a6; --sc-sasha: #8a4bd2; --sc-martin: #2563d0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151c; --surface: #1b1f29; --surface-2: #252a36; --fg: #e8ebf1; --muted: #9aa3b5; --line: #323848;
+    --accent: #f0806a; --accent-soft: #3a2420;
+    --ok: #5fd193; --ok-soft: #173326; --warn: #f2bd5a; --warn-soft: #3a2d14; --bad: #ff8a80; --bad-soft: #3d1f1d;
+    --sc-lidya: #f07acb; --sc-damaris: #e0687c; --sc-wanda: #ff9d7f; --sc-evelyn: #f5cb4f; --sc-selene: #4fd8e3; --sc-sasha: #c6a2ff; --sc-martin: #82b2ff; 
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151c; --surface: #1b1f29; --surface-2: #252a36; --fg: #e8ebf1; --muted: #9aa3b5; --line: #323848;
+  --accent: #f0806a; --accent-soft: #3a2420;
+  --ok: #5fd193; --ok-soft: #173326; --warn: #f2bd5a; --warn-soft: #3a2d14; --bad: #ff8a80; --bad-soft: #3d1f1d;
+  --sc-lidya: #f07acb; --sc-damaris: #e0687c; --sc-wanda: #ff9d7f; --sc-evelyn: #f5cb4f; --sc-selene: #4fd8e3; --sc-sasha: #c6a2ff; --sc-martin: #82b2ff; 
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.4; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-inline: 16px; padding-block: 8px 48px; }
+.num { font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:disabled { opacity: .55; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 2rem; margin: 14px 0 2px; letter-spacing: .01em; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0 0 12px; font-size: .95rem; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.45rem; margin: 30px 0 10px; text-transform: uppercase; letter-spacing: .02em; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; margin: 0; letter-spacing: .02em; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.empty { color: var(--muted); font-size: .93rem; }
+.note { font-size: .88rem; color: var(--muted); margin: 6px 0 0; }
+.banner { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-size: .92rem; display: grid; gap: 4px; }
+.banner strong { font-size: 1rem; }
+.pill { font-family: var(--font-display); font-weight: 700; font-size: .82rem; letter-spacing: .05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; white-space: nowrap; background: var(--surface-2); color: var(--muted); }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.sc { background: color-mix(in srgb, var(--c, var(--accent)) 16%, var(--surface)); color: var(--c, var(--accent)); }
+.btn { border: 0; border-radius: 10px; padding: 11px 16px; font-weight: 700; background: var(--accent); color: var(--surface); min-height: 46px; }
+.btn.ghost { background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
+.btn.danger { background: var(--bad); color: var(--surface); }
+.btn.sm { padding: 6px 10px; min-height: 38px; font-size: .88rem; border-radius: 8px; }
+.toast { font-size: .95rem; color: var(--ok); font-weight: 600; margin: 10px 0 0; min-height: 1.3em; }
+.toast.err { color: var(--bad); }
+.field { display: grid; gap: 5px; min-width: 0; }
+.field > span { font-size: .76rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.field input, .field select { font: inherit; font-size: 1rem; padding: 10px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); width: 100%; min-width: 0; min-height: 46px; }
+
+/* Semana */
+.weekbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); margin-inline: -16px; padding: 10px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.week-label { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; letter-spacing: .02em; flex: 1 1 0; text-align: center; min-width: 0; text-wrap: balance; }
+.weekbar .arrow { min-width: 44px; font-size: 1.2rem; }
+#wkToday { flex-basis: 100%; }
+
+/* Ahora */
+.now-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.now-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 3px; min-width: 0; }
+.now-card { box-shadow: inset 5px 0 0 var(--c, var(--line)); }
+.av { flex: none; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--c, var(--muted)); color: var(--surface); font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; letter-spacing: 0; text-transform: uppercase; }
+.who-line { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.who-line > span:last-child { min-width: 0; }
+.sup-col, .obj-card { border-top: 5px solid var(--c, var(--line)); }
+.obj-card h3, .sup-col h3 { color: var(--c, var(--fg)); }
+.now-head { display: flex; justify-content: space-between; align-items: center; gap: 6px 8px; flex-wrap: wrap; }
+.now-head .who-line { flex: 1 1 170px; }
+.now-name { font-weight: 700; min-width: 0; overflow-wrap: break-word; }
+.role { display: block; font-family: var(--font-body); font-weight: 400; font-size: .8rem; color: var(--muted); letter-spacing: 0; text-transform: none; }
+.tagt { font-size: .68rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); color: var(--muted); margin-left: 4px; vertical-align: 1px; text-transform: uppercase; letter-spacing: .04em; }
+.now-place { font-family: var(--font-display); font-weight: 700; font-size: 1.35rem; line-height: 1.15; overflow-wrap: anywhere; }
+.now-sub { font-size: .9rem; color: var(--muted); }
+
+/* Horarios */
+.daychips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.daychips button { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 13px; font-weight: 600; font-size: .9rem; min-height: 40px; }
+.daychips button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.daychips .today { box-shadow: inset 0 -3px 0 var(--accent); }
+.sched-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin-top: 12px; }
+.sup-col { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.sup-col-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.blk { display: grid; grid-template-columns: 70px 1fr; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+.blk:first-of-type { border-top: 0; }
+.blk.is-now { background: var(--ok-soft); border-radius: 8px; padding: 8px; border-top-color: transparent; }
+.blk-time { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; line-height: 1.15; }
+.blk-time small { display: block; font-family: var(--font-body); font-weight: 400; font-size: .76rem; color: var(--muted); }
+.blk-main { display: grid; gap: 2px; min-width: 0; }
+.blk-place { font-weight: 700; overflow-wrap: anywhere; }
+.blk-det { font-size: .86rem; color: var(--muted); overflow-wrap: anywhere; }
+.chip-act { justify-self: start; font-size: .74rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.tbl-wrap { overflow-x: auto; margin-top: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table.week { border-collapse: collapse; min-width: 900px; width: 100%; font-size: .85rem; }
+table.week th, table.week td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 8px; vertical-align: top; text-align: left; }
+table.week th { background: var(--surface-2); font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+table.week th.today { color: var(--accent); }
+table.week td.who { font-weight: 700; white-space: nowrap; position: sticky; left: 0; background: var(--surface); box-shadow: inset 5px 0 0 var(--c, var(--line)); }
+table.week .wb { background: color-mix(in srgb, var(--c, var(--line)) 12%, transparent); border-radius: 6px; padding: 4px 6px; }
+table.week .wb { margin-bottom: 6px; line-height: 1.25; }
+table.week .wb b { font-variant-numeric: tabular-nums; }
+table.week .wb span { color: var(--muted); }
+
+/* Objetivos */
+.obj-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+.obj-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.obj-card, .sup-col, .now-card { grid-template-columns: minmax(0, 1fr); }
+.obj-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.obj-count { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
+.bar { height: 7px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--c, var(--ok)); border-radius: 4px; transition: width .2s; }
+.obj-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.obj { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; padding: 7px 4px; border-radius: 8px; }
+.obj:hover { background: var(--bg); }
+.obj input[type="checkbox"] { width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--c, var(--ok)); cursor: pointer; }
+.obj label { cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
+.obj label small { display: block; color: var(--muted); font-size: .8rem; }
+.obj.done label { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--muted); }
+.obj .x { border: 0; background: none; color: var(--muted); font-size: 1.15rem; line-height: 1; padding: 2px 6px; border-radius: 6px; min-height: 28px; }
+.obj .x:hover { color: var(--bad); background: var(--bad-soft); }
+.obj .xyes { border: 0; background: var(--bad); color: var(--surface); font-size: .78rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+.obj-add { display: flex; gap: 6px; }
+.obj-add input { flex: 1; min-width: 0; font: inherit; font-size: .95rem; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); min-height: 40px; }
+.obj-add select { flex: 0 1 130px; min-width: 0; font: inherit; font-size: .85rem; padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); }
+
+/* Editor */
+.bform { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+.bform .wide { grid-column: 1 / -1; }
+.hrow { position: relative; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 12px; padding: 30px 12px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.hrow .field input, .hrow .field select { background: var(--surface); }
+.hrow .wide { grid-column: 1 / -1; }
+.hrow-n { position: absolute; top: 8px; left: 12px; font-family: var(--font-display); font-weight: 700; font-size: .95rem; letter-spacing: .04em; text-transform: uppercase; color: var(--c, var(--accent)); }
+#editor { border-top: 5px solid var(--c, var(--line)); }
+.hrow { box-shadow: inset 4px 0 0 var(--c, var(--line)); }
+#bSave, .obj-add .btn { background: var(--c, var(--accent)); }
+.hrow .rm { position: absolute; top: 4px; right: 6px; border: 0; background: none; color: var(--muted); font-size: 1.3rem; line-height: 1; padding: 2px 8px; border-radius: 6px; min-height: 30px; }
+.hrow .rm:hover { color: var(--bad); background: var(--bad-soft); }
+.hrow.err { border-color: var(--bad); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+.ed-day { margin-top: 14px; }
+.ed-day-name { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; text-transform: uppercase; letter-spacing: .03em; }
+.ed-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-top: 6px; }
+.ed-row .t { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; min-width: 96px; }
+.ed-row .d { flex: 1 1 180px; min-width: 0; overflow-wrap: anywhere; }
+.ed-row .d small { display: block; color: var(--muted); }
+.ed-row .b { display: flex; gap: 6px; }
+#copyBox { width: 100%; min-height: 160px; margin-top: 10px; font: inherit; font-size: .9rem; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); }
+
+/* Configuración */
+.cfg { display: grid; gap: 8px; }
+.cfg-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cfg-row input, .cfg-row select { font: inherit; font-size: 1rem; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); min-width: 0; min-height: 42px; }
+.cfg-row input { flex: 1 1 180px; }
+.cfg-row select { flex: 0 1 200px; }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <h1>Planificación de supervisoras</h1>
+  <p class="lead">Horarios y objetivos semanales de todo el equipo en un solo panel.</p>
+  <div class="banner" id="banner" role="status" hidden></div>
+
+  <div class="weekbar">
+    <button class="btn ghost sm arrow" id="wkPrev" type="button" aria-label="Semana anterior">‹</button>
+    <span class="week-label num" id="weekLabel"></span>
+    <button class="btn ghost sm arrow" id="wkNext" type="button" aria-label="Semana siguiente">›</button>
+    <button class="btn ghost sm" id="wkToday" type="button" hidden>Ir a esta semana</button>
+  </div>
+
+  <h2>¿Dónde está cada una ahora?</h2>
+  <div class="now-grid" id="nowGrid"></div>
+  <p class="note num" id="nowNote"></p>
+
+  <h2>Horarios</h2>
+  <div class="daychips" id="dayChips" role="group" aria-label="Elegir día"></div>
+  <div id="sched"></div>
+
+  <h2>Objetivos semanales</h2>
+  <p class="note" style="margin-top:-4px">Tildá cada objetivo cuando se cumple y queda tachado.</p>
+  <div class="obj-grid" id="objGrid" style="margin-top:10px"></div>
+
+  <h2 id="edTitle">Cargar horario</h2>
+  <div class="card" id="editor">
+    <div class="bform">
+      <label class="field" for="edSup"><span>Supervisora</span><select id="edSup"></select></label>
+      <label class="field" for="bDia"><span>Día</span><select id="bDia"></select></label>
+    </div>
+    <div id="rows"></div>
+    <button class="btn ghost" id="addRow" type="button" style="margin-top:10px">+ Agregar otro horario</button>
+    <div class="actions">
+      <button class="btn" id="bSave" type="button">Guardar horarios</button>
+      <button class="btn ghost" id="bCancel" type="button" hidden>Cancelar edición</button>
+      <button class="btn ghost" id="bCopyPrev" type="button">Copiar horario de la semana anterior</button>
+      <button class="btn ghost" id="waBtn" type="button">Copiar semana para WhatsApp</button>
+    </div>
+    <p class="toast" id="toast" role="status"></p>
+    <textarea id="copyBox" hidden readonly aria-label="Planificación para copiar"></textarea>
+    <div id="edList"></div>
+  </div>
+
+  <section id="adminSec" hidden>
+    <h2>Supervisoras y tiendas</h2>
+    <div class="card">
+      <h3>Supervisoras</h3>
+      <div class="cfg" id="supList" style="margin-top:8px"></div>
+      <div class="cfg-row" style="margin-top:10px">
+        <input id="newSup" type="text" placeholder="Nombre de la supervisora" aria-label="Nombre de la nueva supervisora" autocomplete="off">
+        <button class="btn sm" id="addSup" type="button">Agregar supervisora</button>
+      </div>
+      <h3 style="margin-top:22px">Tiendas</h3>
+      <div class="cfg" id="tiendaList" style="margin-top:8px"></div>
+      <div class="cfg-row" style="margin-top:10px">
+        <input id="newTienda" type="text" placeholder="Nombre de la tienda" aria-label="Nombre de la nueva tienda" autocomplete="off">
+        <select id="newTiendaSup" aria-label="Supervisora a cargo de la nueva tienda"></select>
+        <button class="btn sm" id="addTienda" type="button">Agregar tienda</button>
+      </div>
+      <p class="note">Solo vos y quienes tengan permiso de Editor ven esta sección.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseYmd = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const todayStr = () => ymd(new Date());
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const ACTS = ["Auditoría", "Visita de seguimiento", "Capacitación", "Inducción", "Reunión", "Reporte / administración", "Traslado", "Otro"];
+const DOW = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const DOWS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+const MONTHL = new Intl.DateTimeFormat("es-AR", { month: "long" });
+const WDL = new Intl.DateTimeFormat("es-AR", { weekday: "long" });
+const mondayOf = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+const addDays = (s, n) => { const d = parseYmd(s); d.setDate(d.getDate() + n); return ymd(d); };
+const thisWeek = () => ymd(mondayOf(new Date()));
+const nowHM = () => { const d = new Date(); return pad(d.getHours()) + ":" + pad(d.getMinutes()); };
+const toMin = hm => { const [h, m] = String(hm || "0:0").split(":").map(Number); return h * 60 + m; };
+const fmtHrs = mins => { const h = Math.floor(mins / 60), m = Math.round(mins % 60); return m ? `${h} h ${m} min` : `${h} h`; };
+const dd = s => { const d = parseYmd(s); return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`; };
+const fmtDayLong = s => { const d = parseYmd(s); const w = WDL.format(d); return `${w.charAt(0).toUpperCase() + w.slice(1)} ${dd(s)}`; };
+function weekLabel(w) {
+  const a = parseYmd(w), b = parseYmd(addDays(w, 6));
+  return a.getMonth() === b.getMonth() ? `Semana del ${a.getDate()} al ${b.getDate()} de ${MONTHL.format(b)}` : `Semana del ${a.getDate()} de ${MONTHL.format(a)} al ${b.getDate()} de ${MONTHL.format(b)}`;
+}
+const LS_ED = "planificacion-editar-supervisora", LS_VIEW = "planificacion-vista";
+
+let db = null, myId = null, canWrite = null, isAdmin = false;
+let cfg = { supervisoras: [], tiendas: [] };
+let week = thisWeek(), nowWeek = thisWeek();
+let plans = new Map(), nowPlans = new Map();
+let unsubWeek = null, unsubNow = null, editing = null;
+let view = todayStr();   // un día (yyyy-mm-dd) o "semana"
+const writes = {};
+
+function flash(msg, err) { const t = $("toast"); t.textContent = msg; t.classList.toggle("err", !!err); clearTimeout(flash.t); flash.t = setTimeout(() => t.textContent = "", err ? 7000 : 3500); }
+function banner(title, text) { const b = $("banner"); b.hidden = false; b.innerHTML = `<strong>${esc(title)}</strong><span>${esc(text)}</span>`; }
+const SC = { "p-lidya": "lidya", "p-damaris": "damaris", "p-wanda": "wanda", "p-evelyn": "evelyn", "p-selene": "selene", "p-sasha": "sasha", "p-martin": "martin" };
+const SC_CYCLE = ["damaris", "evelyn", "wanda", "selene", "sasha", "lidya", "martin"];
+const cv = id => { const k = SC[id] || SC_CYCLE[Math.max(0, cfg.supervisoras.findIndex(s => s.id === id)) % SC_CYCLE.length]; return `--c: var(--sc-${k})`; };
+const initial = id => (supName(id).trim()[0] || "?");
+const avatar = id => `<span class="av" style="${cv(id)}" aria-hidden="true">${esc(initial(id))}</span>`;
+const supRole = id => (cfg.supervisoras.find(s => s.id === id) || {}).rol || "";
+const roleHtml = id => supRole(id) ? `<small class="role">${esc(supRole(id))}</small>` : "";
+const supName = id => (cfg.supervisoras.find(s => s.id === id) || {}).name || "Sin supervisora";
+const tiendaName = id => (cfg.tiendas.find(t => t.id === id) || {}).name || "Tienda";
+const placeName = b => b.tiendaId ? tiendaName(b.tiendaId) : (b.lugarTexto || "Sin lugar");
+const tiendaTags = id => ((cfg.tiendas.find(t => t.id === id) || {}).tags || []).map(x => `<span class="tagt">${esc(x)}</span>`).join("");
+const sortBlocks = l => l.slice().sort((a, b) => a.dia.localeCompare(b.dia) || a.desde.localeCompare(b.desde));
+const planOf = id => plans.get(id) || { supId: id, semana: week, bloques: [], objetivos: [] };
+const blockNow = b => { const n = nowHM(); return b.dia === todayStr() && b.desde <= n && n < b.hasta; };
+
+/* ---------- Guardado ---------- */
+function writePlan(supId, mutate, okMsg) {
+  if (!db) { flash("Abrí la página desde Claude con tu cuenta para guardar.", true); return; }
+  if (canWrite === false) { flash("Tu acceso es solo de lectura. Pedile a la administradora permiso para editar.", true); return; }
+  const w = week, key = supId + "_" + w;
+  const run = async () => {
+    const base = JSON.parse(JSON.stringify(w === week ? planOf(supId) : { supId, semana: w, bloques: [], objetivos: [] }));
+    mutate(base);
+    Object.assign(base, { supId, semana: w, actualizado: new Date().toISOString(), actualizadoPor: myId || "" });
+    if (w === week) { plans.set(supId, base); if (w === nowWeek) nowPlans = plans; renderAll(); }
+    await db.collection("planes").doc(key).set(base);
+    if (okMsg) flash(okMsg);
+  };
+  writes[key] = (writes[key] || Promise.resolve()).then(run).catch(err => {
+    if (err && err.code === "invalid_argument") { canWrite = false; flash("No tenés permiso para guardar. Pedile a la administradora permiso para editar.", true); }
+    else flash("No se pudo guardar. Revisá la conexión y probá de nuevo.", true);
+  });
+}
+
+/* ---------- Datos ---------- */
+function subscribeWeek() {
+  if (!db) return;
+  if (unsubWeek) unsubWeek();
+  plans = new Map(); renderAll();
+  const w = week;
+  unsubWeek = db.collection("planes").where("semana", "==", w).limit(200).onSnapshot(snap => {
+    if (w !== week) return;
+    plans = new Map(snap.docs.map(d => [d.data().supId, d.data()]));
+    if (w === nowWeek) nowPlans = plans;
+    renderAll();
+  }, () => flash("No se pudo leer la planificación. Recargá la página.", true));
+}
+function subscribeNow() {
+  if (!db) return;
+  if (unsubNow) unsubNow();
+  const w = nowWeek;
+  unsubNow = db.collection("planes").where("semana", "==", w).limit(200).onSnapshot(snap => {
+    nowPlans = new Map(snap.docs.map(d => [d.data().supId, d.data()])); renderNow();
+  }, () => {});
+}
+
+/* ---------- Ahora ---------- */
+function renderNow() {
+  const grid = $("nowGrid");
+  if (!db) { grid.innerHTML = `<div class="card empty">Abrí la página desde Claude con tu cuenta para ver la planificación.</div>`; $("nowNote").textContent = ""; return; }
+  if (!cfg.supervisoras.length) { grid.innerHTML = `<div class="card empty">Todavía no hay supervisoras cargadas.</div>`; return; }
+  const t = todayStr(), n = nowHM();
+  grid.innerHTML = cfg.supervisoras.map(s => {
+    const today = sortBlocks(((nowPlans.get(s.id) || {}).bloques || []).filter(b => b.dia === t));
+    const cur = today.find(b => b.desde <= n && n < b.hasta), next = today.find(b => b.desde > n);
+    if (cur) return `<div class="now-card on" style="${cv(s.id)}"><div class="now-head"><span class="who-line">${avatar(s.id)}<span class="now-name">${esc(s.name)}${roleHtml(s.id)}</span></span><span class="pill ok">Ahora</span></div>
+      <span class="now-place">${esc(placeName(cur))}${cur.tiendaId ? tiendaTags(cur.tiendaId) : ""}</span><span class="now-sub">${esc(cur.actividad)} · ${cur.desde} a ${cur.hasta}</span>${cur.detalle ? `<span class="now-sub">${esc(cur.detalle)}</span>` : ""}
+      ${next ? `<span class="now-sub">Después: ${esc(placeName(next))} a las ${next.desde}</span>` : ""}</div>`;
+    if (next) return `<div class="now-card next" style="${cv(s.id)}"><div class="now-head"><span class="who-line">${avatar(s.id)}<span class="now-name">${esc(s.name)}${roleHtml(s.id)}</span></span><span class="pill sc">Desde las ${next.desde}</span></div>
+      <span class="now-place">${esc(placeName(next))}</span><span class="now-sub">${esc(next.actividad)} · ${next.desde} a ${next.hasta}</span></div>`;
+    if (today.length) { const l = today[today.length - 1]; return `<div class="now-card" style="${cv(s.id)}"><div class="now-head"><span class="who-line">${avatar(s.id)}<span class="now-name">${esc(s.name)}${roleHtml(s.id)}</span></span><span class="pill">Terminó</span></div>
+      <span class="now-sub">Terminó su horario de hoy. Último: ${esc(placeName(l))} hasta las ${l.hasta}.</span></div>`; }
+    return `<div class="now-card" style="${cv(s.id)}"><div class="now-head"><span class="who-line">${avatar(s.id)}<span class="now-name">${esc(s.name)}${roleHtml(s.id)}</span></span><span class="pill">Sin horario</span></div><span class="now-sub">No tiene horario cargado para hoy.</span></div>`;
+  }).join("");
+  $("nowNote").textContent = `Según el horario cargado · ${fmtDayLong(t)}, ${n} h`;
+}
+
+/* ---------- Horarios ---------- */
+function renderChips() {
+  const t = todayStr();
+  if (view !== "semana" && (view < week || view > addDays(week, 6))) view = (t >= week && t <= addDays(week, 6)) ? t : week;
+  $("dayChips").innerHTML = DOWS.map((d, i) => { const v = addDays(week, i); return `<button type="button" data-view="${v}" aria-pressed="${view === v}" class="${v === t ? "today" : ""}">${d} ${dd(v)}</button>`; }).join("")
+    + `<button type="button" data-view="semana" aria-pressed="${view === "semana"}">Semana completa</button>`;
+}
+$("dayChips").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (!b) return; view = b.dataset.view; try { localStorage.setItem(LS_VIEW, view === "semana" ? "semana" : "dia"); } catch (er) {} renderSched(); });
+function renderSched() {
+  renderChips();
+  const box = $("sched");
+  if (!db || !cfg.supervisoras.length) { box.innerHTML = ""; return; }
+  if (view === "semana") {
+    const t = todayStr();
+    box.innerHTML = `<div class="tbl-wrap"><table class="week"><thead><tr><th>Supervisora</th>${DOWS.map((d, i) => { const v = addDays(week, i); return `<th class="${v === t ? "today" : ""}">${d} ${dd(v)}</th>`; }).join("")}</tr></thead><tbody>
+      ${cfg.supervisoras.map(s => { const bl = planOf(s.id).bloques || []; return `<tr style="${cv(s.id)}"><td class="who"><span class="who-line">${avatar(s.id)}<span>${esc(s.name)}${roleHtml(s.id)}</span></span></td>${DOWS.map((d, i) => { const v = addDays(week, i), l = sortBlocks(bl.filter(b => b.dia === v)); return `<td>${l.map(b => `<div class="wb"><b>${b.desde}–${b.hasta}</b><br>${esc(placeName(b))}<br><span>${esc(b.actividad)}</span></div>`).join("") || `<span class="note">–</span>`}</td>`; }).join("")}</tr>`; }).join("")}
+    </tbody></table></div>`;
+    return;
+  }
+  box.innerHTML = `<div class="sched-grid">${cfg.supervisoras.map(s => {
+    const l = sortBlocks((planOf(s.id).bloques || []).filter(b => b.dia === view));
+    const mins = l.reduce((a, b) => a + Math.max(0, toMin(b.hasta) - toMin(b.desde)), 0);
+    return `<div class="sup-col" style="${cv(s.id)}"><div class="sup-col-head"><span class="who-line">${avatar(s.id)}<h3>${esc(s.name)}${roleHtml(s.id)}</h3></span><span class="note num" style="margin:0">${l.length ? fmtHrs(mins) : ""}</span></div>
+      ${l.length ? l.map(b => `<div class="blk${blockNow(b) ? " is-now" : ""}"><div class="blk-time num">${b.desde}<small>a ${b.hasta}</small></div>
+        <div class="blk-main"><span class="chip-act">${esc(b.actividad)}</span><span class="blk-place">${esc(placeName(b))}${blockNow(b) ? ` <span class="pill ok" style="font-size:.7rem">Ahora</span>` : ""}</span>${b.detalle ? `<span class="blk-det">${esc(b.detalle)}</span>` : ""}</div></div>`).join("")
+        : `<p class="note" style="margin:0">Sin horario cargado para este día.</p>`}
+    </div>`;
+  }).join("")}</div>`;
+}
+
+/* ---------- Objetivos ---------- */
+function renderObj() {
+  const grid = $("objGrid");
+  if (!db || !cfg.supervisoras.length) { grid.innerHTML = ""; return; }
+  const can = canWrite !== false;
+  const focus = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.addfor;
+  const drafts = {}; grid.querySelectorAll("[data-addfor]").forEach(i => drafts[i.dataset.addfor] = i.value);
+  grid.innerHTML = cfg.supervisoras.map(s => {
+    const ob = planOf(s.id).objetivos || [], ok = ob.filter(o => o.hecho).length;
+    const mine = cfg.tiendas.filter(t => t.sup === s.id);
+    return `<div class="obj-card" style="${cv(s.id)}">
+      <div class="obj-head"><span class="who-line">${avatar(s.id)}<h3>${esc(s.name)}${roleHtml(s.id)}</h3></span><span class="obj-count num" style="color:var(--${ob.length && ok === ob.length ? "ok" : "fg"})">${ob.length ? `${ok} de ${ob.length}` : "–"}</span></div>
+      <div class="bar" aria-hidden="true"><i style="width:${ob.length ? Math.round(ok / ob.length * 100) : 0}%"></i></div>
+      ${ob.length ? `<ul class="obj-list">${ob.map(o => `<li class="obj${o.hecho ? " done" : ""}">
+          <input type="checkbox" id="ck_${esc(o.id)}" data-sup="${esc(s.id)}" data-ck="${esc(o.id)}"${o.hecho ? " checked" : ""}${can ? "" : " disabled"}>
+          <label for="ck_${esc(o.id)}">${esc(o.texto)}${o.tiendaId ? `<small>${esc(tiendaName(o.tiendaId))}</small>` : ""}</label>
+          ${can ? `<span><button type="button" class="x" data-sup="${esc(s.id)}" data-del="${esc(o.id)}" aria-label="Borrar objetivo">×</button><button type="button" class="xyes" data-sup="${esc(s.id)}" data-delyes="${esc(o.id)}" hidden>Borrar</button></span>` : "<span></span>"}
+        </li>`).join("")}</ul>` : `<p class="note" style="margin:0">Sin objetivos para esta semana.</p>`}
+      ${can ? `<div class="obj-add">
+        <input type="text" data-addfor="${esc(s.id)}" placeholder="Nuevo objetivo de la semana" aria-label="Nuevo objetivo para ${esc(s.name)}" autocomplete="off">
+        <button type="button" class="btn sm" data-add="${esc(s.id)}">Agregar</button></div>` : ""}
+    </div>`;
+  }).join("");
+  Object.entries(drafts).forEach(([k, v]) => { const i = grid.querySelector(`[data-addfor="${CSS.escape(k)}"]`); if (i) i.value = v; });
+  if (focus) { const i = grid.querySelector(`[data-addfor="${CSS.escape(focus)}"]`); if (i) i.focus(); }
+}
+function addObj(supId) {
+  const inp = $("objGrid").querySelector(`[data-addfor="${CSS.escape(supId)}"]`), sel = $("objGrid").querySelector(`[data-tfor="${CSS.escape(supId)}"]`);
+  const texto = inp.value.trim(); if (!texto) { inp.focus(); return; }
+  const tiendaId = sel ? sel.value : "";
+  inp.value = "";
+  writePlan(supId, p => { p.objetivos.push({ id: newId("o"), texto, tiendaId, hecho: false }); });
+}
+$("objGrid").addEventListener("change", e => {
+  const ck = e.target.dataset.ck; if (!ck) return;
+  const supId = e.target.dataset.sup, val = e.target.checked;
+  writePlan(supId, p => { p.objetivos = p.objetivos.map(o => o.id === ck ? Object.assign({}, o, { hecho: val, hechoEn: val ? new Date().toISOString() : "" }) : o); });
+});
+$("objGrid").addEventListener("click", e => {
+  const add = e.target.closest("[data-add]"); if (add) { addObj(add.dataset.add); return; }
+  const del = e.target.closest("[data-del]"); if (del) { del.hidden = true; del.nextElementSibling.hidden = false; return; }
+  const yes = e.target.closest("[data-delyes]");
+  if (yes) writePlan(yes.dataset.sup, p => { p.objetivos = p.objetivos.filter(o => o.id !== yes.dataset.delyes); });
+});
+$("objGrid").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset.addfor) { e.preventDefault(); addObj(e.target.dataset.addfor); } });
+
+/* ---------- Editor de horario ---------- */
+const edSup = () => $("edSup").value;
+let rowSeq = 0;
+function lugarOptions(sid) {
+  const mine = cfg.tiendas.filter(x => x.sup === sid), others = cfg.tiendas.filter(x => x.sup !== sid);
+  return `<option value="">Elegí dónde</option>${mine.length ? `<optgroup label="Sus tiendas">${mine.map(x => `<option value="t:${esc(x.id)}">${esc(x.name)}</option>`).join("")}</optgroup>` : ""}`
+    + (others.length ? `<optgroup label="Otras tiendas">${others.map(x => `<option value="t:${esc(x.id)}">${esc(x.name)}</option>`).join("")}</optgroup>` : "")
+    + `<optgroup label="Otro lugar"><option value="x:Oficina">Oficina</option><option value="x:Traslado">En traslado</option><option value="x:">Otro (escribir)</option></optgroup>`;
+}
+const rowsEl = () => [...$("rows").querySelectorAll(".hrow")];
+const rf = (row, f) => row.querySelector(`[data-f="${f}"]`);
+function addRow(pre) {
+  const n = ++rowSeq, row = document.createElement("div");
+  row.className = "hrow";
+  row.innerHTML = `<span class="hrow-n"></span><button type="button" class="rm" data-rmrow aria-label="Quitar este horario">×</button>
+    <label class="field" for="r${n}d"><span>Desde</span><input id="r${n}d" data-f="desde" type="time" step="900"></label>
+    <label class="field" for="r${n}h"><span>Hasta</span><input id="r${n}h" data-f="hasta" type="time" step="900"></label>
+    <label class="field" for="r${n}l"><span>Dónde</span><select id="r${n}l" data-f="lugar">${lugarOptions(edSup())}</select></label>
+    <label class="field" for="r${n}t" data-txtwrap hidden><span>Lugar</span><input id="r${n}t" data-f="txt" type="text" placeholder="Ej.: oficina central" autocomplete="off"></label>
+    <label class="field" for="r${n}a"><span>Qué hace</span><select id="r${n}a" data-f="act">${ACTS.map(a => `<option>${a}</option>`).join("")}</select></label>
+    <label class="field wide" for="r${n}x"><span>Detalle (opcional)</span><input id="r${n}x" data-f="det" type="text" placeholder="Ej.: auditoría formato Experience" autocomplete="off"></label>`;
+  $("rows").appendChild(row);
+  if (pre) {
+    if (pre.desde) rf(row, "desde").value = pre.desde;
+    if (pre.hasta) rf(row, "hasta").value = pre.hasta;
+    if (pre.lugar) rf(row, "lugar").value = pre.lugar;
+    if (pre.txt) rf(row, "txt").value = pre.txt;
+    if (pre.act) rf(row, "act").value = pre.act;
+    if (pre.det) rf(row, "det").value = pre.det;
+  }
+  row.querySelector("[data-txtwrap]").hidden = rf(row, "lugar").value !== "x:";
+  numberRows();
+  return row;
+}
+function numberRows() {
+  const rs = rowsEl();
+  rs.forEach((r, i) => { r.querySelector(".hrow-n").textContent = editing ? "Editando horario" : `Horario ${i + 1}`; r.querySelector(".rm").hidden = rs.length < 2 || !!editing; });
+  $("addRow").hidden = !!editing;
+}
+$("addRow").addEventListener("click", () => {
+  const rs = rowsEl(), last = rs[rs.length - 1];
+  const row = addRow({ desde: last ? rf(last, "hasta").value : "" });
+  rf(row, rf(row, "desde").value ? "hasta" : "desde").focus();
+});
+$("rows").addEventListener("click", e => { const rm = e.target.closest("[data-rmrow]"); if (rm) { rm.closest(".hrow").remove(); numberRows(); } });
+$("rows").addEventListener("change", e => {
+  if (e.target.dataset.f !== "lugar") return;
+  const row = e.target.closest(".hrow"), w = row.querySelector("[data-txtwrap]");
+  w.hidden = e.target.value !== "x:"; if (!w.hidden) rf(row, "txt").focus();
+});
+function fillEditor() {
+  const es = $("edSup"); let keep = es.value; if (!keep) { try { keep = localStorage.getItem(LS_ED) || ""; } catch (e) {} }
+  es.innerHTML = cfg.supervisoras.length ? cfg.supervisoras.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("") : `<option value="">Sin supervisoras</option>`;
+  if (cfg.supervisoras.some(s => s.id === keep)) es.value = keep;
+  $("editor").setAttribute("style", edSup() ? cv(edSup()) : "");
+  const ds = $("bDia"), kd = ds.value, t = todayStr();
+  ds.innerHTML = DOW.map((d, i) => { const v = addDays(week, i); return `<option value="${v}">${d} ${dd(v)}</option>`; }).join("");
+  ds.value = (kd >= week && kd <= addDays(week, 6)) ? kd : (t >= week && t <= addDays(week, 6) ? t : week);
+  const opts = lugarOptions(edSup());
+  if (!rowsEl().length) addRow();
+  rowsEl().forEach(r => { const sel = rf(r, "lugar"), k = sel.value; sel.innerHTML = opts; if ([...sel.options].some(o => o.value === k)) sel.value = k; r.querySelector("[data-txtwrap]").hidden = sel.value !== "x:"; });
+}
+$("edSup").addEventListener("change", () => { try { localStorage.setItem(LS_ED, edSup()); } catch (e) {} resetForm(); fillEditor(); renderEdList(); });
+function resetForm(pre) {
+  editing = null; $("bSave").textContent = "Guardar horarios"; $("bCancel").hidden = true;
+  $("rows").innerHTML = ""; addRow(pre);
+}
+$("bCancel").addEventListener("click", () => resetForm());
+$("bSave").addEventListener("click", () => {
+  const sid = edSup(); if (!sid) { flash("Primero cargá las supervisoras.", true); return; }
+  const dia = $("bDia").value, items = [];
+  rowsEl().forEach(r => r.classList.remove("err"));
+  for (const [i, r] of rowsEl().entries()) {
+    const desde = rf(r, "desde").value, hasta = rf(r, "hasta").value, lv = rf(r, "lugar").value, det = rf(r, "det").value.trim();
+    if (!desde && !hasta && !lv && !det) continue;
+    const bad = msg => { r.classList.add("err"); flash(`Horario ${i + 1}: ${msg}`, true); r.scrollIntoView({ behavior: "smooth", block: "center" }); };
+    if (!desde || !hasta) return bad("completá desde y hasta.");
+    if (desde >= hasta) return bad("la hora de fin tiene que ser posterior a la de inicio.");
+    if (!lv) return bad("elegí dónde va a estar.");
+    let tiendaId = "", lugarTexto = "";
+    if (lv.startsWith("t:")) tiendaId = lv.slice(2);
+    else { lugarTexto = lv === "x:" ? rf(r, "txt").value.trim() : lv.slice(2); if (!lugarTexto) return bad("escribí el lugar."); }
+    const prev = items.find(x => x.desde < hasta && desde < x.hasta);
+    if (prev) return bad(`se superpone con el horario ${prev.n} (${prev.desde} a ${prev.hasta}).`);
+    const clash = (planOf(sid).bloques || []).find(b => b.dia === dia && b.id !== editing && b.desde < hasta && desde < b.hasta);
+    if (clash) return bad(`se superpone con ${placeName(clash)} (${clash.desde} a ${clash.hasta}), ya cargado.`);
+    items.push({ n: i + 1, dia, desde, hasta, tiendaId, lugarTexto, actividad: rf(r, "act").value, detalle: det });
+  }
+  if (!items.length) { flash("Completá al menos un horario.", true); return; }
+  const eid = editing, clean = items.map(({ n, ...x }) => x);
+  const dayName = DOW[(parseYmd(dia).getDay() + 6) % 7];
+  writePlan(sid, p => {
+    if (eid) p.bloques = p.bloques.map(b => b.id === eid ? Object.assign({}, b, clean[0]) : b);
+    else clean.forEach(x => p.bloques.push(Object.assign({ id: newId("b") }, x)));
+  }, eid ? "Horario actualizado" : `Guardados ${clean.length} ${clean.length === 1 ? "horario" : "horarios"} de ${supName(sid)} para el ${dayName.toLowerCase()} ${dd(dia)}`);
+  const lastEnd = clean.map(x => x.hasta).sort().pop();
+  resetForm({ desde: lastEnd }); $("bDia").value = dia;
+});
+function renderEdList() {
+  const sid = edSup(), box = $("edList");
+  if (!sid || !db) { box.innerHTML = ""; return; }
+  const bl = planOf(sid).bloques || [], can = canWrite !== false;
+  const days = DOW.map((d, i) => { const v = addDays(week, i), l = sortBlocks(bl.filter(b => b.dia === v)); return l.length ? `<div class="ed-day"><span class="ed-day-name">${d} ${dd(v)}</span>
+    ${l.map(b => `<div class="ed-row"><span class="t num">${b.desde}–${b.hasta}</span><span class="d"><b>${esc(placeName(b))}</b><small>${esc(b.actividad)}${b.detalle ? " · " + esc(b.detalle) : ""}</small></span>
+      ${can ? `<span class="b"><button type="button" class="btn ghost sm" data-edit="${esc(b.id)}">Editar</button><button type="button" class="btn ghost sm" data-bdel="${esc(b.id)}">Borrar</button><button type="button" class="btn danger sm" data-bdelyes="${esc(b.id)}" hidden>Sí, borrar</button></span>` : ""}</div>`).join("")}</div>` : ""; }).join("");
+  box.innerHTML = `<h3 style="margin-top:20px">Horario de ${esc(supName(sid))} · ${esc(weekLabel(week).toLowerCase())}</h3>` + (days || `<p class="note">Todavía no tiene actividades cargadas esta semana.</p>`);
+}
+$("edList").addEventListener("click", e => {
+  const sid = edSup();
+  const ed = e.target.closest("[data-edit]");
+  if (ed) {
+    const b = (planOf(sid).bloques || []).find(x => x.id === ed.dataset.edit); if (!b) return;
+    editing = b.id; $("bDia").value = b.dia; $("rows").innerHTML = "";
+    const lv = b.tiendaId ? "t:" + b.tiendaId : (["Oficina", "Traslado"].includes(b.lugarTexto) ? "x:" + b.lugarTexto : "x:");
+    addRow({ desde: b.desde, hasta: b.hasta, lugar: lv, txt: b.tiendaId ? "" : b.lugarTexto, act: b.actividad, det: b.detalle || "" });
+    $("bSave").textContent = "Guardar cambios"; $("bCancel").hidden = false;
+    $("edTitle").scrollIntoView({ behavior: "smooth", block: "start" }); return;
+  }
+  const d = e.target.closest("[data-bdel]"); if (d) { d.hidden = true; d.nextElementSibling.hidden = false; return; }
+  const y = e.target.closest("[data-bdelyes]");
+  if (y) { if (editing === y.dataset.bdelyes) resetForm(); writePlan(sid, p => { p.bloques = p.bloques.filter(b => b.id !== y.dataset.bdelyes); }, "Actividad borrada"); }
+});
+$("bCopyPrev").addEventListener("click", async () => {
+  const sid = edSup(); if (!db || !sid) return;
+  if ((planOf(sid).bloques || []).length) { flash(`${supName(sid)} ya tiene horario cargado esta semana. Borralo si querés copiar la anterior.`, true); return; }
+  try {
+    const snap = await db.collection("planes").doc(sid + "_" + addDays(week, -7)).get();
+    const prev = snap.exists ? (snap.data().bloques || []) : [];
+    if (!prev.length) { flash("La semana anterior no tiene horario cargado.", true); return; }
+    writePlan(sid, p => { p.bloques = prev.map(b => Object.assign({}, b, { id: newId("b"), dia: addDays(b.dia, 7) })); }, `Copiadas ${prev.length} actividades de la semana anterior`);
+  } catch (e) { flash("No se pudo leer la semana anterior. Probá de nuevo.", true); }
+});
+$("waBtn").addEventListener("click", async () => {
+  const lines = [`*Planificación de supervisoras*`, weekLabel(week), ""];
+  cfg.supervisoras.forEach(s => {
+    const p = planOf(s.id), ob = p.objetivos || [];
+    lines.push(`*${s.name}*`);
+    if (ob.length) { lines.push(`Objetivos (${ob.filter(o => o.hecho).length} de ${ob.length} cumplidos):`); ob.forEach(o => lines.push(`${o.hecho ? "✅" : "⬜"} ${o.texto}${o.tiendaId ? " (" + tiendaName(o.tiendaId) + ")" : ""}`)); }
+    DOW.forEach((d, i) => { const v = addDays(week, i), l = sortBlocks((p.bloques || []).filter(b => b.dia === v)); if (l.length) lines.push(`_${d} ${dd(v)}_: ` + l.map(b => `${b.desde}–${b.hasta} ${placeName(b)} (${b.actividad})`).join(" · ")); });
+    if (!ob.length && !(p.bloques || []).length) lines.push("Sin planificación cargada.");
+    lines.push("");
+  });
+  const txt = lines.join("\n").trim();
+  try { await navigator.clipboard.writeText(txt); $("copyBox").hidden = true; flash("Copiado. Pegalo en WhatsApp o en un mail."); }
+  catch (e) { const b = $("copyBox"); b.hidden = false; b.value = txt; b.focus(); b.select(); flash("Seleccioná y copiá el texto de abajo"); }
+});
+
+/* ---------- Semana ---------- */
+function goWeek(w) { week = w; resetForm(); const t = todayStr(); view = view === "semana" ? "semana" : ((t >= w && t <= addDays(w, 6)) ? t : w); subscribeWeek(); }
+$("wkPrev").addEventListener("click", () => goWeek(addDays(week, -7)));
+$("wkNext").addEventListener("click", () => goWeek(addDays(week, 7)));
+$("wkToday").addEventListener("click", () => goWeek(thisWeek()));
+
+/* ---------- Configuración ---------- */
+let cfgWriting = Promise.resolve();
+function writeCfg(next) { cfgWriting = cfgWriting.then(() => db.doc("config/estructura").set(next)).catch(() => flash("No se pudo guardar el cambio. Probá de nuevo.", true)); }
+function renderAdmin() {
+  $("adminSec").hidden = !isAdmin || !db; if (!isAdmin) return;
+  const supOpts = sel => `<option value="">Sin supervisora</option>` + cfg.supervisoras.map(s => `<option value="${esc(s.id)}"${s.id === sel ? " selected" : ""}>${esc(s.name)}</option>`).join("");
+  $("supList").innerHTML = cfg.supervisoras.map(s => `<div class="cfg-row"><input type="text" value="${esc(s.name)}" data-rensup="${esc(s.id)}" aria-label="Nombre de ${esc(s.name)}"><input type="text" value="${esc(s.rol || "")}" data-rolsup="${esc(s.id)}" placeholder="Rol" aria-label="Rol de ${esc(s.name)}">
+    <button type="button" class="btn ghost sm" data-rm="sup:${esc(s.id)}">Quitar</button><button type="button" class="btn danger sm" data-rmyes="sup:${esc(s.id)}" hidden>Sí, quitar</button></div>`).join("") || `<p class="note" style="margin:0">Todavía no hay supervisoras.</p>`;
+  $("tiendaList").innerHTML = cfg.tiendas.map(t => `<div class="cfg-row"><input type="text" value="${esc(t.name)}" data-rentienda="${esc(t.id)}" aria-label="Nombre de ${esc(t.name)}">
+    <select data-assign="${esc(t.id)}" aria-label="Supervisora de ${esc(t.name)}">${supOpts(t.sup)}</select>
+    <button type="button" class="btn ghost sm" data-rm="tienda:${esc(t.id)}">Quitar</button><button type="button" class="btn danger sm" data-rmyes="tienda:${esc(t.id)}" hidden>Sí, quitar</button></div>`).join("") || `<p class="note" style="margin:0">Todavía no hay tiendas.</p>`;
+  const ns = $("newTiendaSup"), k = ns.value; ns.innerHTML = supOpts(k);
+}
+$("addSup").addEventListener("click", () => { const name = $("newSup").value.trim(); if (!name) return; $("newSup").value = ""; writeCfg({ ...cfg, supervisoras: [...cfg.supervisoras, { id: newId("p"), name, rol: "" }] }); });
+$("addTienda").addEventListener("click", () => { const name = $("newTienda").value.trim(); if (!name) return; $("newTienda").value = ""; writeCfg({ ...cfg, tiendas: [...cfg.tiendas, { id: newId("t"), name, sup: $("newTiendaSup").value }] }); });
+$("adminSec").addEventListener("change", e => {
+  const d = e.target.dataset;
+  if (d.rensup && e.target.value.trim()) writeCfg({ ...cfg, supervisoras: cfg.supervisoras.map(s => s.id === d.rensup ? { ...s, name: e.target.value.trim() } : s) });
+  if (d.rolsup) writeCfg({ ...cfg, supervisoras: cfg.supervisoras.map(s => s.id === d.rolsup ? { ...s, rol: e.target.value.trim() } : s) });
+  if (d.rentienda && e.target.value.trim()) writeCfg({ ...cfg, tiendas: cfg.tiendas.map(t => t.id === d.rentienda ? { ...t, name: e.target.value.trim() } : t) });
+  if (d.assign) writeCfg({ ...cfg, tiendas: cfg.tiendas.map(t => t.id === d.assign ? { ...t, sup: e.target.value } : t) });
+});
+$("adminSec").addEventListener("click", e => {
+  const rm = e.target.closest("[data-rm]"); if (rm) { rm.hidden = true; rm.nextElementSibling.hidden = false; return; }
+  const y = e.target.closest("[data-rmyes]"); if (!y) return;
+  const [kind, id] = y.dataset.rmyes.split(":");
+  if (kind === "sup") writeCfg({ supervisoras: cfg.supervisoras.filter(s => s.id !== id), tiendas: cfg.tiendas.map(t => t.sup === id ? { ...t, sup: "" } : t) });
+  else writeCfg({ ...cfg, tiendas: cfg.tiendas.filter(t => t.id !== id) });
+});
+
+/* ---------- Render general ---------- */
+function renderAll() {
+  $("weekLabel").textContent = weekLabel(week);
+  $("wkToday").hidden = week === thisWeek();
+  renderNow(); renderSched(); renderObj(); fillEditor(); renderEdList();
+  const can = canWrite !== false && !!db;
+  $("editor").querySelectorAll("button, input, select").forEach(el => { if (el.id !== "edSup" && el.id !== "waBtn" && el.id !== "copyBox") el.disabled = !can; });
+}
+setInterval(() => {
+  if (thisWeek() !== nowWeek) { nowWeek = thisWeek(); subscribeNow(); }
+  renderNow(); if (view !== "semana" && view === todayStr()) renderSched();
+}, 60000);
+
+/* ---------- Modo local (sin Claude) ---------- */
+const LOCAL_KEY = "planificacion-supervisoras-datos";
+const LOCAL_SEED = {"config/estructura": {"supervisoras": [{"id": "p-lidya", "name": "Lidya", "rol": "Supervisora general"}, {"id": "p-damaris", "name": "Damaris Burgos", "rol": "Supervisora de tiendas"}, {"id": "p-wanda", "name": "Wanda Ruiz", "rol": "Supervisora de tiendas"}, {"id": "p-evelyn", "name": "Evelyn Cedrón", "rol": "Supervisora de tiendas"}, {"id": "p-selene", "name": "Selene Hernández", "rol": "Supervisora tienda propia"}, {"id": "p-sasha", "name": "Sasha Alfini", "rol": "Supervisora tienda propia"}, {"id": "p-martin", "name": "Martín Sastre", "rol": "Supervisor tienda propia"}], "tiendas": [{"id": "t-ballester", "name": "Ballester", "sup": "p-damaris", "tags": []}, {"id": "t-balvanera", "name": "Balvanera", "sup": "p-damaris", "tags": []}, {"id": "t-barrancas-de-belgrano", "name": "Barrancas de Belgrano", "sup": "p-damaris", "tags": []}, {"id": "t-belgrano", "name": "Belgrano", "sup": "p-damaris", "tags": []}, {"id": "t-caballito", "name": "Caballito", "sup": "p-damaris", "tags": ["Experience"]}, {"id": "t-del-viso", "name": "Del Viso", "sup": "p-damaris", "tags": []}, {"id": "t-floresta", "name": "Floresta", "sup": "p-damaris", "tags": []}, {"id": "t-martinez", "name": "Martínez", "sup": "p-damaris", "tags": []}, {"id": "t-munro", "name": "Munro", "sup": "p-damaris", "tags": []}, {"id": "t-palermo", "name": "Palermo", "sup": "p-damaris", "tags": []}, {"id": "t-puerto-madero", "name": "Puerto Madero", "sup": "p-damaris", "tags": []}, {"id": "t-villa-adelina", "name": "Villa Adelina", "sup": "p-damaris", "tags": []}, {"id": "t-campana", "name": "Campana", "sup": "p-wanda", "tags": []}, {"id": "t-don-torcuato", "name": "Don Torcuato", "sup": "p-wanda", "tags": []}, {"id": "t-general-pacheco", "name": "General Pacheco", "sup": "p-wanda", "tags": []}, {"id": "t-ituzaingo", "name": "Ituzaingó", "sup": "p-wanda", "tags": []}, {"id": "t-los-polvorines", "name": "Los Polvorines", "sup": "p-wanda", "tags": []}, {"id": "t-maschwitz", "name": "Maschwitz", "sup": "p-wanda", "tags": []}, {"id": "t-mataderos", "name": "Mataderos", "sup": "p-wanda", "tags": []}, {"id": "t-merlo", "name": "Merlo", "sup": "p-wanda", "tags": []}, {"id": "t-moreno", "name": "Moreno", "sup": "p-wanda", "tags": []}, {"id": "t-paternal", "name": "Paternal", "sup": "p-wanda", "tags": []}, {"id": "t-tigre", "name": "Tigre", "sup": "p-wanda", "tags": []}, {"id": "t-villa-urquiza", "name": "Villa Urquiza", "sup": "p-wanda", "tags": []}, {"id": "t-bella-vista", "name": "Bella Vista", "sup": "p-evelyn", "tags": []}, {"id": "t-devoto", "name": "Devoto", "sup": "p-evelyn", "tags": []}, {"id": "t-escobar", "name": "Escobar", "sup": "p-evelyn", "tags": []}, {"id": "t-florida", "name": "Florida", "sup": "p-evelyn", "tags": []}, {"id": "t-hurlingham", "name": "Hurlingham", "sup": "p-evelyn", "tags": []}, {"id": "t-jose-c-paz", "name": "José C. Paz", "sup": "p-evelyn", "tags": []}, {"id": "t-muniz", "name": "Muñiz", "sup": "p-evelyn", "tags": []}, {"id": "t-pilar-centro", "name": "Pilar Centro", "sup": "p-evelyn", "tags": []}, {"id": "t-pilar-derqui", "name": "Pilar Derqui", "sup": "p-evelyn", "tags": []}, {"id": "t-san-fernando", "name": "San Fernando", "sup": "p-evelyn", "tags": []}, {"id": "t-san-martin", "name": "San Martín", "sup": "p-evelyn", "tags": []}, {"id": "t-san-miguel", "name": "San Miguel", "sup": "p-evelyn", "tags": []}, {"id": "t-canitas", "name": "Cañitas", "sup": "p-selene", "tags": ["Propia", "Experience"]}, {"id": "t-villa-crespo", "name": "Villa Crespo", "sup": "p-sasha", "tags": ["Propia"]}, {"id": "t-vicente-lopez", "name": "Vicente López", "sup": "p-martin", "tags": ["Propia", "Experience"]}]}, "planes/p-damaris_2026-10-19": {"actualizado": "2026-10-20T17:30:46.618Z", "actualizadoPor": "u_JgJJLY_VDZfVg2934M5NZQ", "bloques": [], "objetivos": [], "semana": "2026-10-19", "supId": "p-damaris"}, "planes/p-lidya_2026-10-19": {"actualizado": "2026-10-20T17:30:58.539Z", "actualizadoPor": "u_JgJJLY_VDZfVg2934M5NZQ", "bloques": [], "objetivos": [], "semana": "2026-10-19", "supId": "p-lidya"}};
+function localDb() {
+  let store;
+  try { store = JSON.parse(localStorage.getItem(LOCAL_KEY) || "null"); } catch (e) { store = null; }
+  if (!store) store = JSON.parse(JSON.stringify(LOCAL_SEED));
+  const subs = [];
+  const persist = () => { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(store)); } catch (e) {} };
+  const notify = () => setTimeout(() => subs.forEach(f => f()), 0);
+  const snapDoc = (id, data) => ({ id, exists: !!data, data: () => data ? JSON.parse(JSON.stringify(data)) : undefined, metadata: {} });
+  const docRef = path => ({
+    get: async () => snapDoc(path.split("/").pop(), store[path]),
+    set: async d => { store[path] = JSON.parse(JSON.stringify(d)); persist(); notify(); },
+    delete: async () => { delete store[path]; persist(); notify(); },
+    onSnapshot(next) { const run = () => next(snapDoc(path.split("/").pop(), store[path])); subs.push(run); setTimeout(run, 0); return () => { const i = subs.indexOf(run); if (i >= 0) subs.splice(i, 1); }; }
+  });
+  const query = (col, filters) => ({
+    where: (f, op, v) => query(col, [...filters, [f, v]]),
+    limit: () => query(col, filters),
+    doc: id => docRef(col + "/" + id),
+    onSnapshot(next) {
+      const run = () => { const docs = Object.keys(store).filter(k => k.startsWith(col + "/")).map(k => snapDoc(k.slice(col.length + 1), store[k])).filter(d => filters.every(([f, v]) => d.data()[f] === v)); next({ docs, size: docs.length, empty: !docs.length, metadata: {} }); };
+      subs.push(run); setTimeout(run, 0); return () => { const i = subs.indexOf(run); if (i >= 0) subs.splice(i, 1); };
+    }
+  });
+  window.addEventListener("storage", e => { if (e.key === LOCAL_KEY) { try { store = JSON.parse(e.newValue || "null") || store; } catch (er) {} notify(); } });
+  return { collection: c => query(c, []), doc: p => docRef(p) };
+}
+
+async function init() {
+  try { if (localStorage.getItem(LS_VIEW) === "semana") view = "semana"; } catch (e) {}
+  renderAll();
+  if (!window.claude || typeof window.claude.use !== "function") {
+    db = localDb(); isAdmin = true; canWrite = true; myId = "local";
+    banner("Versión local", "Los horarios y objetivos se guardan solo en este navegador y en esta computadora. No se comparten con el resto del equipo ni con la app publicada.");
+    db.doc("config/estructura").onSnapshot(snap => {
+      const d = snap.exists ? snap.data() : {};
+      cfg = { supervisoras: Array.isArray(d.supervisoras) ? d.supervisoras : [], tiendas: Array.isArray(d.tiendas) ? d.tiendas : [] };
+      renderAll(); renderAdmin();
+    });
+    subscribeWeek(); subscribeNow(); return;
+  }
+  const [dbNs, u] = await Promise.all([claude.use("db"), claude.use("user")]);
+  db = dbNs;
+  if (u) {
+    try { myId = await u.id(); } catch (e) {}
+    try { isAdmin = !!(await u.canEdit()); } catch (e) {}
+    try { canWrite = await u.can("data.write"); } catch (e) { canWrite = null; }
+  }
+  if (!db) { banner("Iniciá sesión en Claude", "Para ver y cargar la planificación necesitás abrir la página con tu cuenta de Claude."); renderAll(); return; }
+  if (canWrite === false) banner("Estás con acceso de solo lectura", "Podés ver horarios y objetivos, pero no cargar ni tachar. Pedile a la administradora permiso para editar.");
+  db.doc("config/estructura").onSnapshot(snap => {
+    const d = snap.exists ? snap.data() : {};
+    cfg = { supervisoras: Array.isArray(d.supervisoras) ? d.supervisoras : [], tiendas: Array.isArray(d.tiendas) ? d.tiendas : [] };
+    renderAll(); renderAdmin();
+  }, () => flash("No se pudo leer la lista de supervisoras. Recargá la página.", true));
+  subscribeWeek(); subscribeNow();
+}
+init();
+</script>
+
+</body>
+</html>

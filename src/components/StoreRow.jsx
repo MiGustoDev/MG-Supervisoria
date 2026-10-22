@@ -115,13 +115,8 @@ export function StoreRow({
             inputMode="numeric"
             value={rc}
             placeholder="0"
-<<<<<<< HEAD
-            onChange={(e) => onChange(tienda.id, 'c', e.target.value)}
-            className={`w-full bg-slate-950 border rounded-xl px-2 sm:px-3 py-2 text-white font-mono-numbers text-sm sm:text-base font-bold focus:outline-none transition ${
-=======
             onChange={(e) => handleNumericChange('c', e.target.value)}
-            className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-white font-mono-numbers text-base sm:text-lg font-bold focus:outline-none transition ${
->>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
+            className={`w-full bg-slate-950 border rounded-xl px-2 sm:px-3 py-2 text-white font-mono-numbers text-sm sm:text-base font-bold focus:outline-none transition ${
               rc && isNaN(c)
                 ? 'border-rose-500 text-rose-300 bg-rose-950/20'
                 : 'border-slate-800 focus:border-amber-500'
@@ -139,13 +134,8 @@ export function StoreRow({
             inputMode="numeric"
             value={rv}
             placeholder="0"
-<<<<<<< HEAD
             onChange={(e) => onChange(tienda.id, 'v', e.target.value)}
             className={`w-full bg-slate-950 border rounded-xl px-2 sm:px-3 py-2 text-white font-mono-numbers text-xs sm:text-base font-bold focus:outline-none transition tracking-tight ${
-=======
-            onChange={(e) => handleNumericChange('v', e.target.value)}
-            className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-white font-mono-numbers text-base sm:text-lg font-bold focus:outline-none transition ${
->>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
               rv && isNaN(v)
                 ? 'border-rose-500 text-rose-300 bg-rose-950/20'
                 : 'border-slate-800 focus:border-amber-500'
@@ -163,13 +153,8 @@ export function StoreRow({
             inputMode="numeric"
             value={ru}
             placeholder="0"
-<<<<<<< HEAD
-            onChange={(e) => onChange(tienda.id, 'u', e.target.value)}
-            className={`w-full bg-slate-950 border rounded-xl px-2 sm:px-3 py-2 text-white font-mono-numbers text-sm sm:text-base font-bold focus:outline-none transition ${
-=======
             onChange={(e) => handleNumericChange('u', e.target.value)}
-            className={`w-full bg-slate-950 border rounded-xl px-3 py-2 text-white font-mono-numbers text-base sm:text-lg font-bold focus:outline-none transition ${
->>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
+            className={`w-full bg-slate-950 border rounded-xl px-2 sm:px-3 py-2 text-white font-mono-numbers text-sm sm:text-base font-bold focus:outline-none transition ${
               ru && isNaN(u)
                 ? 'border-rose-500 text-rose-300 bg-rose-950/20'
                 : 'border-slate-800 focus:border-amber-500'

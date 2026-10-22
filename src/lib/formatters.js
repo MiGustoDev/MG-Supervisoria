@@ -65,8 +65,6 @@ export function formatThousands(raw) {
 export function parseMoney(raw) {
   let s = String(raw || '').replace(/[\s$]/g, '');
   if (!s) return NaN;
-<<<<<<< HEAD
-
   // Caso 1: Tiene puntos y comas (ej: "1.669.515,41" o "1,669,515.41")
   if (s.includes('.') && s.includes(',')) {
     const lastDot = s.lastIndexOf('.');
@@ -105,14 +103,6 @@ export function parseMoney(raw) {
 
   const num = Number(s);
   return !isNaN(num) && num >= 0 ? num : NaN;
-=======
-  if (s.includes(',')) {
-    s = s.replace(/\./g, '').replace(',', '.');
-  } else {
-    s = s.replace(/\./g, '');
-  }
-  return /^\d+(\.\d{1,2})?$/.test(s) ? Number(s) : NaN;
->>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
 }
 
 export function parseCount(raw) {

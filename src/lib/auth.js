@@ -126,6 +126,29 @@ export function canUserAccessHistory(user) {
   );
 }
 
+export function canUserViewLiveLocations(user) {
+  if (!user) return false;
+  const email = String(user.email || '').trim().toLowerCase();
+  return (
+    email === 'admin@migusto.com.ar' ||
+    email === 'mariasalazar@migusto.com.ar' ||
+    email === 'elizabethcolman@migusto.com.ar' ||
+    email === 'lidyatello@migusto.com.ar'
+  );
+}
+
+export function canUserAccessSupervisionFromPlanificacion(user) {
+  if (!user) return false;
+  const email = String(user.email || '').trim().toLowerCase();
+  return (
+    email === 'admin@migusto.com.ar' ||
+    email === 'elizabethcolman@migusto.com.ar' ||
+    email === 'mariasalazar@migusto.com.ar' ||
+    email === 'mariazalazar@migusto.com.ar' ||
+    user?.role === 'Administrador General'
+  );
+}
+
 export function isUserAdmin(user) {
   return canUserDeleteRecords(user) || user?.supId === '__all';
 }

@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, LogOut, ChevronDown, Check, ShieldCheck, Database, X, Lock } from 'lucide-react';
+import { User, LogOut, ChevronDown, Check, ShieldCheck, Database, X, Lock, Calendar, ClipboardList } from 'lucide-react';
 import { animatePopoverEnter, animatePopoverExit } from '../lib/animations';
 import { UserAvatar } from './UserAvatar';
+import { canUserAccessSupervisionFromPlanificacion } from '../lib/auth';
 
 export function Header({
   currentUser,
@@ -9,6 +10,8 @@ export function Header({
   onOpenDbModal,
   isDbConfigured,
   onOpenChangePassword,
+  isPlanificacionRoute = false,
+  onNavigate,
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -42,23 +45,46 @@ export function Header({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuOpen]);
 
+  const canAccessSupervision = canUserAccessSupervisionFromPlanificacion(currentUser);
+
   return (
     <header className="sticky top-0 z-30 backdrop-blur-md bg-slate-950/80 border-b border-slate-800/80">
       <div className="max-w-[1600px] mx-auto px-2.5 sm:px-6 lg:px-8 py-2.5 sm:py-4 flex items-center justify-between gap-4">
         {/* Brand */}
         <div className="flex flex-col">
           <div className="flex items-center gap-3">
-            <img
-              src={`${import.meta.env.BASE_URL}Logo_Mi_Gusto_2025.png`}
-              alt="Mi Gusto"
-              className="h-7 sm:h-9 w-auto object-contain brightness-110 drop-shadow-[0_2px_12px_rgba(245,158,11,0.15)]"
-            />
-            <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-sm">
-              Supervisión
-            </span>
+            {(!isPlanificacionRoute || canAccessSupervision) ? (
+              <a
+                href={`${import.meta.env.BASE_URL}`}
+                className="flex items-center gap-3 group transition"
+                title="Ir a Supervisión - Carga diaria"
+              >
+                <img
+                  src={`${import.meta.env.BASE_URL}Logo_Mi_Gusto_2025.png`}
+                  alt="Mi Gusto"
+                  className="h-7 sm:h-9 w-auto object-contain brightness-110 drop-shadow-[0_2px_12px_rgba(245,158,11,0.15)] group-hover:scale-105 transition-transform"
+                />
+                <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-sm">
+                  Supervisión
+                </span>
+              </a>
+            ) : (
+              <div className="flex items-center gap-3">
+                <img
+                  src={`${import.meta.env.BASE_URL}Logo_Mi_Gusto_2025.png`}
+                  alt="Mi Gusto"
+                  className="h-7 sm:h-9 w-auto object-contain brightness-110 drop-shadow-[0_2px_12px_rgba(245,158,11,0.15)]"
+                />
+                <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-sm">
+                  Planificación
+                </span>
+              </div>
+            )}
           </div>
           <p className="text-[11px] text-slate-400 hidden sm:block mt-1">
-            Control de comandas, venta neta y unidades por tienda
+            {isPlanificacionRoute
+              ? 'Planificación semanal, horarios y objetivos de las supervisoras'
+              : 'Control de comandas, venta neta y unidades por tienda'}
           </p>
         </div>
 
@@ -138,6 +164,42 @@ export function Header({
 
               {/* Menu options */}
               <div className="space-y-1">
+                {isPlanificacionRoute ? (
+                  canAccessSupervision && (
+                    <button
+                      onClick={() => {
+                        closeMenu(() => {
+                          if (onNavigate) {
+                            onNavigate('');
+                          } else {
+                            window.location.href = import.meta.env.BASE_URL;
+                          }
+                        });
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-300 hover:text-white hover:bg-amber-950/40 border border-amber-900/30 transition text-left cursor-pointer"
+                    >
+                      <ClipboardList className="w-4 h-4 text-amber-400" />
+                      <span>Ir a Carga y Supervisión</span>
+                    </button>
+                  )
+                ) : (
+                  <button
+                    onClick={() => {
+                      closeMenu(() => {
+                        if (onNavigate) {
+                          onNavigate('planificacion');
+                        } else {
+                          window.location.href = `${import.meta.env.BASE_URL}planificacion`;
+                        }
+                      });
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-indigo-300 hover:text-white hover:bg-indigo-950/40 border border-indigo-900/30 transition text-left cursor-pointer"
+                  >
+                    <Calendar className="w-4 h-4 text-indigo-400" />
+                    <span>Ir a Planificación</span>
+                  </button>
+                )}
+
                 {onOpenChangePassword && (
                   <button
                     onClick={() => {

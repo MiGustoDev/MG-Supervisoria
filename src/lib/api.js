@@ -402,5 +402,91 @@ export const api = {
 
     return true;
   },
+
+  // Planificación de supervisoras
+  async getPlanesSemana(semana) {
+    const supabase = getSupabase();
+    const LS_PLANES_KEY = `mg_planes_${semana}`;
+
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('mg_planes')
+          .select('*')
+          .eq('semana', semana);
+
+        if (!error && Array.isArray(data)) {
+          const map = {};
+          data.forEach((row) => {
+            const plan = typeof row.data === 'string' ? JSON.parse(row.data) : row.data || row;
+            map[plan.supId || row.sup_id] = plan;
+          });
+          // Cache locally
+          localStorage.setItem(LS_PLANES_KEY, JSON.stringify(map));
+          return map;
+        }
+      } catch (err) {
+        console.warn('Supabase getPlanesSemana error, fallback to local:', err);
+      }
+    }
+
+    const localRaw = localStorage.getItem(LS_PLANES_KEY);
+    if (localRaw) {
+      try {
+        return JSON.parse(localRaw);
+      } catch (e) {}
+    }
+    return {};
+  },
+
+  async savePlan(supId, semana, planData, updatedBy) {
+    const key = `${supId}_${semana}`;
+    const LS_PLANES_KEY = `mg_planes_${semana}`;
+    const payload = {
+      ...planData,
+      supId,
+      semana,
+      actualizado: new Date().toISOString(),
+      actualizadoPor: updatedBy || '',
+    };
+
+    // 1. Guardar local
+    try {
+      const localRaw = localStorage.getItem(LS_PLANES_KEY);
+      const current = localRaw ? JSON.parse(localRaw) : {};
+      current[supId] = payload;
+      localStorage.setItem(LS_PLANES_KEY, JSON.stringify(current));
+    } catch (e) {
+      console.warn('Error saving plan locally:', e);
+    }
+
+    // 2. Guardar en Supabase (mg_planes o mg_config fallback)
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('mg_planes')
+          .upsert({
+            id: key,
+            sup_id: supId,
+            semana,
+            data: payload,
+            updated_at: new Date().toISOString(),
+          });
+        if (error) {
+          // Intentar guardar en mg_config como respaldo si mg_planes no existe aún
+          await supabase.from('mg_config').upsert({
+            id: `plan_${key}`,
+            data: payload,
+            updated_at: new Date().toISOString(),
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to sync plan with Supabase, saved locally:', err);
+      }
+    }
+
+    return payload;
+  },
 };
 

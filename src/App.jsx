@@ -9,6 +9,7 @@ import { DayRankTable } from './components/DayRankTable';
 import { MonthlyDashboard } from './components/MonthlyDashboard';
 import { SupervisorKanbanBoard } from './components/SupervisorKanbanBoard';
 import { HistoryRecordsSection } from './components/HistoryRecordsSection';
+import { PlanificacionSupervisoras } from './components/PlanificacionSupervisoras';
 import { RangeReportDashboard } from './components/RangeReportDashboard';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { CustomDatePicker } from './components/CustomDatePicker';
@@ -33,11 +34,8 @@ import {
   MONTHF,
   parseYmd,
   pad,
-<<<<<<< HEAD
   ymd,
-=======
   formatThousands,
->>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
 } from './lib/formatters';
 import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy, FileText, Save, RotateCcw } from 'lucide-react';
 import { animateTabEnter, animateTabExit, animateToastEnter, gsap } from './lib/animations';
@@ -45,7 +43,35 @@ import { animateTabEnter, animateTabExit, animateToastEnter, gsap } from './lib/
 const LS_SELECTED_SUP = 'mg_active_supervisora';
 const ALL_SUP = '__all';
 
+function getSubRoute() {
+  const fullPath = window.location.pathname.replace(/\/+$/, '');
+  const base = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
+  if (fullPath.endsWith('/planificacion') || fullPath === `${base}/planificacion`) {
+    return 'planificacion';
+  }
+  return '';
+}
+
 export default function App() {
+  const [currentRoute, setCurrentRoute] = useState(() => getSubRoute());
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentRoute(getSubRoute());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateTo = (subRoute) => {
+    const base = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
+    const targetUrl = subRoute ? `${base}/${subRoute}` : (base || '/');
+    if (window.location.pathname !== targetUrl) {
+      window.history.pushState({}, '', targetUrl);
+    }
+    setCurrentRoute(subRoute);
+  };
+
   const dateInputRef = useRef(null);
   const tabContentRef = useRef(null);
   const toastRef = useRef(null);
@@ -197,15 +223,9 @@ export default function App() {
           if (!dirtyStoreIds.has(t.id)) {
             const saved = data[t.id];
             next[t.id] = {
-<<<<<<< HEAD
-              rc: saved ? String(saved.comandas) : '',
-              rv: saved ? formatMoneyInput(saved.venta) : '',
-              ru: saved ? String(saved.unidades) : '',
-=======
               rc: saved && saved.comandas !== undefined && saved.comandas !== null ? formatThousands(saved.comandas) : '',
-              rv: saved && saved.venta !== undefined && saved.venta !== null ? formatThousands(saved.venta) : '',
+              rv: saved && saved.venta !== undefined && saved.venta !== null ? formatMoneyInput(saved.venta) : '',
               ru: saved && saved.unidades !== undefined && saved.unidades !== null ? formatThousands(saved.unidades) : '',
->>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
             };
           }
         });
@@ -945,6 +965,8 @@ export default function App() {
         onOpenDbModal={() => setIsDbModalOpen(true)}
         isDbConfigured={dbCreds.isConfigured}
         onOpenChangePassword={() => setIsChangePasswordOpen(true)}
+        isPlanificacionRoute={currentRoute === 'planificacion'}
+        onNavigate={navigateTo}
       />
 
       {/* Change Password Modal */}
@@ -977,101 +999,123 @@ export default function App() {
           </div>
         )}
 
-        {/* Main Tabs Navigation */}
-        <div className="mb-6 bg-slate-900/70 p-1.5 rounded-2xl border border-slate-800 shadow-md">
-          <div className={`grid gap-1 sm:flex sm:items-center sm:gap-1.5 ${canAccessHistory ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
-            <button
-              onClick={() => handleTabChange('carga')}
-              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
-                activeTab === 'carga'
-                  ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <span className="text-sm sm:text-base">📋</span>
-              <span className="truncate">Carga diaria</span>
-            </button>
-
-            <button
-              onClick={() => handleTabChange('ranking')}
-              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
-                activeTab === 'ranking'
-                  ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <span className="text-sm sm:text-base">🏆</span>
-              <span className="truncate">
-                <span className="sm:hidden">Ranking</span>
-                <span className="hidden sm:inline">Ranking y Métricas</span>
-              </span>
-            </button>
-
-            <button
-              onClick={() => handleTabChange('kanban')}
-              className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
-                activeTab === 'kanban'
-                  ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <span className="text-sm sm:text-base">🔀</span>
-              <span className="truncate">
-                <span className="sm:hidden">Sucursales</span>
-                <span className="hidden sm:inline">Sucursales y supervisores</span>
-              </span>
-              <span className="hidden lg:inline text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
-                {config.tiendas.length}
-              </span>
-            </button>
-
-            {/* Pestaña Historial Exclusiva para Elizabeth y Admin */}
-            {canAccessHistory && (
-              <button
-                onClick={() => handleTabChange('historial')}
-                className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
-                  activeTab === 'historial'
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
-                    : 'text-purple-300/80 hover:text-white hover:bg-purple-950/40 border border-purple-900/30'
-                }`}
-                title="Historial de todos los registros cargados (Solo Admin y Elizabeth)"
-              >
-                <span className="text-sm sm:text-base">📜</span>
-                <span className="truncate">Historial</span>
-                {allCargas.length > 0 && (
-                  <span className="hidden lg:inline text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-950 border border-purple-800 text-purple-200">
-                    {allCargas.length}
-                  </span>
-                )}
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div ref={tabContentRef} key={activeTab}>
-
-        {activeTab === 'historial' && canAccessHistory ? (
-          <HistoryRecordsSection
-            cargas={allCargas}
-            isLoading={isLoadingAllCargas}
-            onRefresh={loadAllCargas}
-            onDeleteRecord={handleDeleteCargaRecord}
-            onUpdateRecord={handleUpdateCargaRecord}
-            supervisoras={config.supervisoras}
-            tiendas={config.tiendas}
-            currentUser={currentUser}
-          />
-        ) : activeTab === 'kanban' ? (
-          <SupervisorKanbanBoard
+        {currentRoute === 'planificacion' ? (
+          <PlanificacionSupervisoras
             config={config}
             currentUser={currentUser}
-            onUpdateConfig={async (next) => {
-              setConfig(next);
-              await api.saveConfig(next);
-              showToast('Asignación de sucursales actualizada', 'success');
-            }}
+            isAdmin={isUserAdmin(currentUser)}
+            onNavigate={navigateTo}
           />
-        ) : activeTab === 'ranking' ? (
+        ) : (
+          <>
+            {/* Main Tabs Navigation */}
+            <div className="mb-6 bg-slate-900/70 p-1.5 rounded-2xl border border-slate-800 shadow-md">
+              <div className={`grid gap-1 sm:flex sm:items-center sm:gap-1.5 ${canAccessHistory ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
+                <button
+                  onClick={() => handleTabChange('carga')}
+                  className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
+                    activeTab === 'carga'
+                      ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <span className="text-sm sm:text-base">📋</span>
+                  <span className="truncate">Carga diaria</span>
+                </button>
+
+                <button
+                  onClick={() => handleTabChange('ranking')}
+                  className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
+                    activeTab === 'ranking'
+                      ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <span className="text-sm sm:text-base">🏆</span>
+                  <span className="truncate">
+                    <span className="sm:hidden">Ranking</span>
+                    <span className="hidden sm:inline">Ranking y Métricas</span>
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleTabChange('kanban')}
+                  className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
+                    activeTab === 'kanban'
+                      ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <span className="text-sm sm:text-base">🔀</span>
+                  <span className="truncate">
+                    <span className="sm:hidden">Sucursales</span>
+                    <span className="hidden sm:inline">Sucursales y supervisores</span>
+                  </span>
+                  <span className="hidden lg:inline text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                    {config.tiendas.length}
+                  </span>
+                </button>
+
+                {/* Pestaña Historial Exclusiva para Elizabeth y Admin */}
+                {canAccessHistory && (
+                  <button
+                    onClick={() => handleTabChange('historial')}
+                    className={`flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer ${
+                      activeTab === 'historial'
+                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                        : 'text-purple-300/80 hover:text-white hover:bg-purple-950/40 border border-purple-900/30'
+                    }`}
+                    title="Historial de todos los registros cargados (Solo Admin y Elizabeth)"
+                  >
+                    <span className="text-sm sm:text-base">📜</span>
+                    <span className="truncate">Historial</span>
+                    {allCargas.length > 0 && (
+                      <span className="hidden lg:inline text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-950 border border-purple-800 text-purple-200">
+                        {allCargas.length}
+                      </span>
+                    )}
+                  </button>
+                )}
+
+                {/* Botón Acceso Rápido a URL de Planificación */}
+                <button
+                  type="button"
+                  onClick={() => navigateTo('planificacion')}
+                  className="flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer text-indigo-300/90 hover:text-white hover:bg-indigo-950/50 border border-indigo-900/40"
+                  title="Abrir Planificación en /planificacion"
+                >
+                  <span className="text-sm sm:text-base">📅</span>
+                  <span className="truncate">Planificación</span>
+                  <span className="hidden xl:inline text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-800/80 text-indigo-300">
+                    URL
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div ref={tabContentRef} key={activeTab}>
+            {activeTab === 'historial' && canAccessHistory ? (
+              <HistoryRecordsSection
+                cargas={allCargas}
+                isLoading={isLoadingAllCargas}
+                onRefresh={loadAllCargas}
+                onDeleteRecord={handleDeleteCargaRecord}
+                onUpdateRecord={handleUpdateCargaRecord}
+                supervisoras={config.supervisoras}
+                tiendas={config.tiendas}
+                currentUser={currentUser}
+              />
+            ) : activeTab === 'kanban' ? (
+              <SupervisorKanbanBoard
+                config={config}
+                currentUser={currentUser}
+                onUpdateConfig={async (next) => {
+                  setConfig(next);
+                  await api.saveConfig(next);
+                  showToast('Asignación de sucursales actualizada', 'success');
+                }}
+              />
+            ) : activeTab === 'ranking' ? (
           /* TAB 2: RANKING Y MÉTRICAS */
           <div className="space-y-4 sm:space-y-6">
             {/* Header Filter Info with Día / Mes / Rango Toggle */}
@@ -1100,7 +1144,6 @@ export default function App() {
                 <div className="flex p-1.5 bg-slate-950 rounded-2xl border border-slate-800 shadow-inner">
                   <button
                     type="button"
-<<<<<<< HEAD
                     onClick={() => setRankingView('dia')}
                     className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
                       rankingView === 'dia'
@@ -1114,10 +1157,6 @@ export default function App() {
                     type="button"
                     onClick={() => setRankingView('mes')}
                     className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
-=======
-                    onClick={() => handleRankingViewChange('mes')}
-                    className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer active:scale-95 ${
->>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
                       rankingView === 'mes'
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -1127,15 +1166,9 @@ export default function App() {
                   </button>
                   <button
                     type="button"
-<<<<<<< HEAD
                     onClick={() => setRankingView('rango')}
                     className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
                       rankingView === 'rango'
-=======
-                    onClick={() => handleRankingViewChange('dia')}
-                    className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 cursor-pointer active:scale-95 ${
-                      rankingView === 'dia'
->>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
                     }`}
@@ -1180,7 +1213,6 @@ export default function App() {
 
             {/* Content: Day Ranking OR Monthly Dashboard OR Range Report Dashboard */}
             {activeStores.length > 0 ? (
-<<<<<<< HEAD
               rankingView === 'dia' ? (
                 <DayRankTable
                   rankedList={rankedDayList}
@@ -1221,30 +1253,6 @@ export default function App() {
                   isAdmin={isUserAdmin(currentUser)}
                 />
               )
-=======
-              <div ref={rankingContentRef} key={rankingView}>
-                {rankingView === 'dia' ? (
-                  <DayRankTable
-                    rankedList={rankedDayList}
-                    metric={dayRankMetric}
-                    onMetricChange={setDayRankMetric}
-                    dateTitle={fmtDayLong(selectedFecha)}
-                  />
-                ) : (
-                  <MonthlyDashboard
-                    month={selectedMonth}
-                    onMonthChange={setSelectedMonth}
-                    kpis={monthlyData.kpis}
-                    storesMonthly={monthlyData.storesMonthly}
-                    supervisorasMonthly={monthlyData.supervisorasMonthly}
-                    daysMonthly={monthlyData.daysMonthly}
-                    isAllSupervisors={selectedSup === ALL_SUP}
-                    onExportMonthPdf={handleExportRankingPdf}
-                    onExportMonthCsv={handleExportMonthCsv}
-                  />
-                )}
-              </div>
->>>>>>> 33129ebfaa43e3cfcbd000f23c780876d2600188
             ) : (
               <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
                 <p className="text-base font-semibold text-white mb-1">
@@ -1455,7 +1463,9 @@ export default function App() {
         )}
           </>
         )}
-        </div>
+            </div>
+          </>
+        )}
       </main>
 
       {/* Screen Footer */}

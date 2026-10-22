@@ -66,10 +66,21 @@ CREATE TABLE IF NOT EXISTS public.mg_cargas (
   modificado_en TIMESTAMPTZ
 );
 
--- Habilitar RLS y políticas permisivas (o lectura/escritura anónima)
+-- 3. Tabla de Planificación (Horarios y Objetivos Semanales)
+CREATE TABLE IF NOT EXISTS public.mg_planes (
+  id TEXT PRIMARY KEY, -- formato: {supId}_{semana}
+  sup_id TEXT NOT NULL,
+  semana DATE NOT NULL, -- fecha lunes de la semana (YYYY-MM-DD)
+  data JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Habilitar RLS y políticas permisivas (lectura y escritura para el equipo)
 ALTER TABLE public.mg_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mg_cargas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mg_planes ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Permitir todo mg_config" ON public.mg_config FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Permitir todo mg_cargas" ON public.mg_cargas FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Permitir todo mg_planes" ON public.mg_planes FOR ALL USING (true) WITH CHECK (true);
 `;
