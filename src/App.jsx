@@ -17,6 +17,7 @@ import { CustomMonthPicker } from './components/CustomMonthPicker';
 import { CustomSupervisorSelect } from './components/CustomSupervisorSelect';
 import { Footer } from './components/Footer';
 import { UserAvatar } from './components/UserAvatar';
+import { ExcelImportModal } from './components/ExcelImportModal';
 import { api } from './lib/api';
 import { getSupabaseCredentials } from './lib/supabase';
 import { getStoredSession, clearSession, isUserAdmin, canUserAccessHistory } from './lib/auth';
@@ -37,7 +38,7 @@ import {
   ymd,
   formatThousands,
 } from './lib/formatters';
-import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy, FileText, Save, RotateCcw } from 'lucide-react';
+import { Calendar, UserCheck, AlertTriangle, CheckCircle, Copy, FileText, Save, RotateCcw, FileSpreadsheet } from 'lucide-react';
 import { animateTabEnter, animateTabExit, animateToastEnter, gsap } from './lib/animations';
 
 const LS_SELECTED_SUP = 'mg_active_supervisora';
@@ -130,6 +131,7 @@ export default function App() {
   const [dayRankMetric, setDayRankMetric] = useState('v');
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
 
   const showToast = (text, type = 'success') => {
     setToastMessage({ text, type });
@@ -532,6 +534,36 @@ export default function App() {
     setDirtyStoreIds(new Set());
     loadDayData(selectedFecha);
     showToast('Cambios descartados', 'info');
+  };
+
+  // Aplicar datos autocompletados desde Excel
+  const handleApplyExcelImport = (itemsToApply) => {
+    if (!itemsToApply || itemsToApply.length === 0) return;
+
+    setFormInputs((prev) => {
+      const next = { ...prev };
+      itemsToApply.forEach((item) => {
+        next[item.store.id] = {
+          rc: item.rc,
+          rv: item.rv,
+          ru: item.ru,
+        };
+      });
+      return next;
+    });
+
+    setDirtyStoreIds((prev) => {
+      const next = new Set(prev);
+      itemsToApply.forEach((item) => {
+        next.add(item.store.id);
+      });
+      return next;
+    });
+
+    showToast(
+      `¡Se completaron ${itemsToApply.length} sucursales desde el Excel! Verificá y hacé clic en Guardar.`,
+      'success'
+    );
   };
 
   // WhatsApp formatted text generator
@@ -1339,6 +1371,25 @@ export default function App() {
               />
             </div>
           </div>
+
+          {/* Banner de Carga Rápida con Excel */}
+          <div className="mt-4 pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 text-xs text-slate-300">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span>
+                ¿Tenés la planilla de ventas de hoy? Cargá todas las tiendas de <strong className="text-white">{activeSupName}</strong> automáticamente.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsExcelModalOpen(true)}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 transition active:scale-95 cursor-pointer shrink-0"
+              title="Importar comandas, ventas y unidades desde planilla Excel"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Importar Excel</span>
+            </button>
+          </div>
         </div>
 
         {/* Day Sticky Bar */}
@@ -1398,7 +1449,7 @@ export default function App() {
         {/* Action buttons toolbar positioned directly below the store sheet */}
         {activeStores.length > 0 && (
           <div className="mt-6 bg-slate-900/60 border border-slate-800 rounded-3xl p-3.5 sm:p-5 shadow-xl">
-            <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-4xl mx-auto items-stretch">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 max-w-5xl mx-auto items-stretch">
               {/* Primary Save Button */}
               <button
                 type="button"
@@ -1419,6 +1470,17 @@ export default function App() {
                     ? `Guardar (${dirtyStoreIds.size})`
                     : 'Guardar'}
                 </span>
+              </button>
+
+              {/* Import Excel Button */}
+              <button
+                type="button"
+                onClick={() => setIsExcelModalOpen(true)}
+                className="py-3 px-2 sm:px-4 rounded-2xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/60 hover:border-emerald-500/60 text-emerald-300 hover:text-white font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 shadow-md shadow-emerald-950/30 cursor-pointer"
+                title="Importar carga diaria desde planilla Excel"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="truncate">Importar Excel</span>
               </button>
 
               {/* Discard changes button (always visible, disabled if no dirty stores) */}
@@ -1456,7 +1518,7 @@ export default function App() {
                 title="Exportar a CSV / Excel"
               >
                 <span className="text-base shrink-0 leading-none">📊</span>
-                <span className="truncate">Excel</span>
+                <span className="truncate">Exportar</span>
               </button>
             </div>
           </div>
@@ -1475,6 +1537,18 @@ export default function App() {
       <DatabaseModal
         isOpen={isDbModalOpen}
         onClose={() => setIsDbModalOpen(false)}
+      />
+
+      {/* Excel Import Modal */}
+      <ExcelImportModal
+        isOpen={isExcelModalOpen}
+        onClose={() => setIsExcelModalOpen(false)}
+        allStores={config.tiendas}
+        activeStores={activeStores}
+        currentUser={currentUser}
+        activeSupName={activeSupName}
+        selectedFecha={selectedFecha}
+        onApplyImport={handleApplyExcelImport}
       />
     </div>
   );
