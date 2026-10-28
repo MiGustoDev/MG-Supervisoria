@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   FileSpreadsheet,
   Upload,
@@ -17,6 +17,16 @@ import {
 import confetti from 'canvas-confetti';
 import { parseExcelData } from '../lib/excelImport';
 import { ARS, INT, formatThousands, formatMoneyInput } from '../lib/formatters';
+import { animateModalEnter, animateModalExit } from '../lib/animations';
+
+function formatFechaDDMMAAAA(fechaStr) {
+  if (!fechaStr) return '';
+  const parts = String(fechaStr).split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return fechaStr;
+}
 
 export function ExcelImportModal({
   isOpen,
@@ -34,6 +44,14 @@ export function ExcelImportModal({
   const [errorMsg, setErrorMsg] = useState('');
   const [selectedStoreIds, setSelectedStoreIds] = useState(new Set());
   const fileInputRef = useRef(null);
+  const backdropRef = useRef(null);
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && modalRef.current && backdropRef.current) {
+      animateModalEnter(modalRef.current, backdropRef.current);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -127,10 +145,15 @@ export function ExcelImportModal({
   };
 
   const handleClose = () => {
-    setParseResult(null);
-    setErrorMsg('');
-    setSelectedStoreIds(new Set());
-    onClose();
+    if (modalRef.current && backdropRef.current) {
+      animateModalExit(modalRef.current, backdropRef.current, () => {
+        resetFile();
+        onClose();
+      });
+    } else {
+      resetFile();
+      onClose();
+    }
   };
 
   const resetFile = () => {
@@ -155,8 +178,17 @@ export function ExcelImportModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div
+      ref={backdropRef}
+      onClick={(e) => {
+        if (e.target === backdropRef.current) handleClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md"
+    >
+      <div
+        ref={modalRef}
+        className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+      >
         {/* Header Modal */}
         <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-gradient-to-r from-amber-500/10 via-slate-900 to-transparent">
           <div className="flex items-center gap-3">
@@ -171,7 +203,8 @@ export function ExcelImportModal({
                 </span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Carga diaria para <strong className="text-slate-200">{activeSupName}</strong> · Fecha: <strong className="text-slate-200">{selectedFecha}</strong>
+                Carga diaria para <strong className="text-slate-200">{activeSupName}</strong> · Fecha:{' '}
+                <strong className="text-slate-200">{formatFechaDDMMAAAA(selectedFecha)}</strong>
               </p>
             </div>
           </div>
@@ -193,9 +226,7 @@ export function ExcelImportModal({
                 <AlertCircle className="w-5 h-5 shrink-0 text-amber-400" />
                 <span>Atención con el formato del archivo</span>
               </div>
-              <p className="text-slate-300 text-xs leading-relaxed">
-                {errorMsg}
-              </p>
+              <p className="text-slate-300 text-xs leading-relaxed">{errorMsg}</p>
               <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2 text-xs">
                 <p className="font-extrabold text-white flex items-center gap-1.5">
                   <span>💡 ¿Cómo solucionarlo rápidamente?</span>
@@ -262,9 +293,7 @@ export function ExcelImportModal({
               <div className="p-4 rounded-2xl bg-slate-950/50 border border-slate-800 text-xs text-slate-400 flex items-start gap-3">
                 <HelpCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <div className="space-y-1">
-                  <p className="font-semibold text-slate-300">
-                    Modo de importación activo:
-                  </p>
+                  <p className="font-semibold text-slate-300">Modo de importación activo:</p>
                   {activeStores.length >= allStores.length ? (
                     <p className="leading-relaxed">
                       Estás en la <strong className="text-amber-400">Vista General (Todas las tiendas)</strong> como <strong className="text-slate-200">{currentUser?.name}</strong>. Al subir el archivo, el sistema completará automáticamente los <strong className="text-white">{allStores.length} locales de la red</strong> en un solo paso.
@@ -280,76 +309,65 @@ export function ExcelImportModal({
           ) : (
             /* STEP 2: Preview & Confirmation */
             <div className="space-y-5">
-              {/* File Info Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <FileSpreadsheet className="w-5 h-5 text-emerald-400 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-bold text-white truncate">
-                      {parseResult.fileName}
-                    </p>
-                    <p className="text-[11px] text-slate-400">
-                      {(parseResult.fileSize / 1024).toFixed(1)} KB · {parseResult.summary.totalDetected} sucursales detectadas
-                    </p>
+              {/* TOP SINGLE ROW: File Info + Listas para cargar Status Card */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+                {/* File Info Box */}
+                <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 shadow-inner">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                      <FileSpreadsheet className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-bold text-white truncate" title={parseResult.fileName}>
+                        {parseResult.fileName}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {(parseResult.fileSize / 1024).toFixed(1)} KB · {parseResult.summary.totalDetected} sucursales detectadas
+                      </p>
+                    </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={resetFile}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition cursor-pointer shrink-0"
+                  >
+                    Cambiar archivo
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={resetFile}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition cursor-pointer"
-                >
-                  Cambiar archivo
-                </button>
-              </div>
+                {/* Listas para cargar Status Card */}
+                <div className="p-3.5 rounded-2xl bg-emerald-950/25 border border-emerald-800/50 flex items-center justify-between gap-3 shadow-inner">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-400">
+                        Listas para cargar
+                      </p>
+                      <p className="text-base sm:text-lg font-black text-white font-mono-numbers truncate">
+                        {parseResult.matchedActive.length} sucursales
+                      </p>
+                    </div>
+                  </div>
 
-              {/* Summary Badges */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-2xl bg-emerald-950/20 border border-emerald-800/40 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] uppercase tracking-wider font-extrabold text-emerald-400">
-                      Listas para cargar
-                    </p>
-                    <p className="text-lg font-black text-white font-mono-numbers">
-                      {parseResult.matchedActive.length} sucursales
-                    </p>
-                  </div>
+                  {/* Compact badges for other or unmatched if any */}
+                  {(parseResult.matchedOther.length > 0 || parseResult.unmatched.length > 0) && (
+                    <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono-numbers shrink-0">
+                      {parseResult.matchedOther.length > 0 && (
+                        <span className="px-2 py-1 rounded-lg bg-slate-800/90 text-slate-400 border border-slate-700/60" title="Sucursales de otras supervisoras">
+                          {parseResult.matchedOther.length} otras
+                        </span>
+                      )}
+                      {parseResult.unmatched.length > 0 && (
+                        <span className="px-2 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30" title="Filas no identificadas">
+                          {parseResult.unmatched.length} omitidas
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                {parseResult.matchedOther.length > 0 && (
-                  <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800/80 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center shrink-0">
-                      <ShieldAlert className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-[11px] uppercase tracking-wider font-extrabold text-slate-400">
-                        Otras supervisoras
-                      </p>
-                      <p className="text-lg font-black text-slate-300 font-mono-numbers">
-                        {parseResult.matchedOther.length} omitidas
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {parseResult.unmatched.length > 0 && (
-                  <div className="p-3.5 rounded-2xl bg-amber-950/20 border border-amber-800/40 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
-                      <AlertCircle className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-[11px] uppercase tracking-wider font-extrabold text-amber-400">
-                        No identificadas
-                      </p>
-                      <p className="text-lg font-black text-white font-mono-numbers">
-                        {parseResult.unmatched.length} filas
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* KPI Totals Preview */}
@@ -413,7 +431,7 @@ export function ExcelImportModal({
                           <input
                             type="checkbox"
                             checked={isChecked}
-                            onChange={() => {}} // handled by parent div
+                            onChange={() => {}}
                             className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 bg-slate-900 border-slate-700 pointer-events-none"
                           />
                           <div className="min-w-0 font-sans">
@@ -451,22 +469,14 @@ export function ExcelImportModal({
           )}
         </div>
 
-        {/* Modal Footer Actions */}
-        <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-950 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs sm:text-sm transition cursor-pointer"
-          >
-            Cancelar
-          </button>
-
+        {/* Modal Footer Actions: Cancelar on right, AFTER Aplicar button */}
+        <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-950 flex items-center justify-end gap-3">
           {parseResult && (
             <button
               type="button"
               onClick={handleConfirm}
               disabled={selectedStoreIds.size === 0}
-              className={`px-6 py-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center gap-2 shadow-xl ${
+              className={`px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center gap-2 shadow-xl ${
                 selectedStoreIds.size > 0
                   ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 shadow-amber-500/25 active:scale-95 cursor-pointer'
                   : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50'
@@ -476,6 +486,14 @@ export function ExcelImportModal({
               <ArrowRight className="w-4 h-4" />
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={handleClose}
+            className="px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs sm:text-sm transition cursor-pointer"
+          >
+            Cancelar
+          </button>
         </div>
       </div>
     </div>
