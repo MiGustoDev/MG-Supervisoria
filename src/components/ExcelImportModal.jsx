@@ -188,11 +188,26 @@ export function ExcelImportModal({
         {/* Content Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
           {errorMsg && (
-            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs sm:text-sm flex items-start gap-3 animate-shake">
-              <AlertCircle className="w-5 h-5 shrink-0 text-rose-400 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-bold">Ocurrió un error</p>
-                <p className="text-rose-400/90 text-xs mt-0.5">{errorMsg}</p>
+            <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs sm:text-sm space-y-3">
+              <div className="flex items-center gap-2.5 font-bold text-amber-300">
+                <AlertCircle className="w-5 h-5 shrink-0 text-amber-400" />
+                <span>Atención con el formato del archivo</span>
+              </div>
+              <p className="text-slate-300 text-xs leading-relaxed">
+                {errorMsg}
+              </p>
+              <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2 text-xs">
+                <p className="font-extrabold text-white flex items-center gap-1.5">
+                  <span>💡 ¿Cómo solucionarlo rápidamente?</span>
+                </p>
+                <div className="space-y-1.5 text-slate-300">
+                  <p>
+                    <strong>Opción A (Recomendada):</strong> En Excel, andá a <em>Archivo ➔ Guardar como</em> y en el desplegable de Tipo elegí <strong className="text-amber-400">«Libro de Excel (*.xlsx)»</strong>. Luego arrastrá ese archivo.
+                  </p>
+                  <p>
+                    <strong>Opción B (Directa):</strong> En tu carpeta de Descargas, entrá a la carpeta <code className="text-emerald-300">Reporte_ventas (4)_archivos</code> y arrastrá el archivo <strong className="text-emerald-300">sheet001.htm</strong> aquí.
+                  </p>
+                </div>
               </div>
             </div>
           )}
