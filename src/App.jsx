@@ -1108,20 +1108,6 @@ export default function App() {
                     )}
                   </button>
                 )}
-
-                {/* Botón Acceso Rápido a URL de Planificación */}
-                <button
-                  type="button"
-                  onClick={() => navigateTo('planificacion')}
-                  className="flex items-center justify-center gap-1.5 px-2.5 sm:px-5 py-2.5 rounded-xl font-extrabold text-[11px] sm:text-sm gsap-button text-center transition-all duration-200 cursor-pointer text-indigo-300/90 hover:text-white hover:bg-indigo-950/50 border border-indigo-900/40"
-                  title="Abrir Planificación en /planificacion"
-                >
-                  <span className="text-sm sm:text-base">📅</span>
-                  <span className="truncate">Planificación</span>
-                  <span className="hidden xl:inline text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-800/80 text-indigo-300">
-                    URL
-                  </span>
-                </button>
               </div>
             </div>
 
@@ -1176,8 +1162,8 @@ export default function App() {
                 <div className="flex p-1.5 bg-slate-950 rounded-2xl border border-slate-800 shadow-inner">
                   <button
                     type="button"
-                    onClick={() => setRankingView('dia')}
-                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
+                    onClick={() => handleRankingViewChange('dia')}
+                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer ${
                       rankingView === 'dia'
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -1187,8 +1173,8 @@ export default function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setRankingView('mes')}
-                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
+                    onClick={() => handleRankingViewChange('mes')}
+                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer ${
                       rankingView === 'mes'
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -1198,8 +1184,8 @@ export default function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setRankingView('rango')}
-                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 ${
+                    onClick={() => handleRankingViewChange('rango')}
+                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer ${
                       rankingView === 'rango'
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -1209,19 +1195,11 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Show Month Picker only when viewing Mes */}
-                {rankingView === 'mes' && (
-                  <CustomMonthPicker
-                    value={selectedMonth}
-                    onChange={setSelectedMonth}
-                  />
-                )}
-
                 {/* Botón Exportar PDF de Ranking / Métricas / Rango */}
                 <button
                   type="button"
                   onClick={handleExportRankingPdf}
-                  className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-rose-600/25 active:scale-95"
+                  className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-rose-600/25 active:scale-95 cursor-pointer"
                   title="Descargar informe ejecutivo en PDF de ranking o métricas"
                 >
                   <FileText className="w-4 h-4" />
@@ -1233,7 +1211,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={handleExportRangeCsv}
-                    className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-emerald-600/25 active:scale-95"
+                    className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-emerald-600/25 active:scale-95 cursor-pointer"
                     title="Descargar CSV del rango de fechas seleccionado"
                   >
                     <FileText className="w-4 h-4" />
@@ -1243,55 +1221,58 @@ export default function App() {
               </div>
             </div>
 
-            {/* Content: Day Ranking OR Monthly Dashboard OR Range Report Dashboard */}
-            {activeStores.length > 0 ? (
-              rankingView === 'dia' ? (
-                <DayRankTable
-                  rankedList={rankedDayList}
-                  metric={dayRankMetric}
-                  onMetricChange={setDayRankMetric}
-                  dateTitle={fmtDayLong(selectedFecha)}
-                />
-              ) : rankingView === 'mes' ? (
-                <MonthlyDashboard
-                  month={selectedMonth}
-                  onMonthChange={setSelectedMonth}
-                  kpis={monthlyData.kpis}
-                  storesMonthly={monthlyData.storesMonthly}
-                  supervisorasMonthly={monthlyData.supervisorasMonthly}
-                  daysMonthly={monthlyData.daysMonthly}
-                  isAllSupervisors={selectedSup === ALL_SUP}
-                  onExportMonthPdf={handleExportRankingPdf}
-                  onExportMonthCsv={handleExportMonthCsv}
-                />
+            {/* Content: Day Ranking OR Monthly Dashboard OR Range Report Dashboard with smooth transitions */}
+            <div ref={rankingContentRef}>
+              {activeStores.length > 0 ? (
+                rankingView === 'dia' ? (
+                  <DayRankTable
+                    rankedList={rankedDayList}
+                    metric={dayRankMetric}
+                    onMetricChange={setDayRankMetric}
+                    dateTitle={fmtDayLong(selectedFecha)}
+                  />
+                ) : rankingView === 'mes' ? (
+                  <MonthlyDashboard
+                    month={selectedMonth}
+                    onMonthChange={setSelectedMonth}
+                    kpis={monthlyData.kpis}
+                    storesMonthly={monthlyData.storesMonthly}
+                    supervisorasMonthly={monthlyData.supervisorasMonthly}
+                    daysMonthly={monthlyData.daysMonthly}
+                    isAllSupervisors={selectedSup === ALL_SUP}
+                    onExportMonthPdf={handleExportRankingPdf}
+                    onExportMonthCsv={handleExportMonthCsv}
+                  />
+                ) : (
+                  <RangeReportDashboard
+                    startDate={rangeStartDate}
+                    endDate={rangeEndDate}
+                    onStartDateChange={setRangeStartDate}
+                    onEndDateChange={setRangeEndDate}
+                    selectedSup={selectedSup}
+                    onSelectSup={(supId) => {
+                      setSelectedSup(supId);
+                      localStorage.setItem(LS_SELECTED_SUP, supId);
+                    }}
+                    supervisoras={config.supervisoras}
+                    tiendas={config.tiendas}
+                    kpis={rangeData.kpis}
+                    storesData={rangeData.storesData}
+                    supervisorasData={rangeData.supervisorasData}
+                    daysData={rangeData.daysData}
+                    isAllSupervisors={selectedSup === ALL_SUP}
+                    currentUser={currentUser}
+                    isAdmin={isUserAdmin(currentUser)}
+                  />
+                )
               ) : (
-                <RangeReportDashboard
-                  startDate={rangeStartDate}
-                  endDate={rangeEndDate}
-                  onStartDateChange={setRangeStartDate}
-                  onEndDateChange={setRangeEndDate}
-                  selectedSup={selectedSup}
-                  onSelectSup={(supId) => {
-                    setSelectedSup(supId);
-                    localStorage.setItem(LS_SELECTED_SUP, supId);
-                  }}
-                  supervisoras={config.supervisoras}
-                  kpis={rangeData.kpis}
-                  storesData={rangeData.storesData}
-                  supervisorasData={rangeData.supervisorasData}
-                  daysData={rangeData.daysData}
-                  isAllSupervisors={selectedSup === ALL_SUP}
-                  currentUser={currentUser}
-                  isAdmin={isUserAdmin(currentUser)}
-                />
-              )
-            ) : (
-              <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
-                <p className="text-base font-semibold text-white mb-1">
-                  Sin tiendas para mostrar métricas
-                </p>
-              </div>
-            )}
+                <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
+                  <p className="text-base font-semibold text-white mb-1">
+                    Sin tiendas para mostrar métricas
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           /* TAB 1: CARGA DIARIA (Enfocada 100% en la carga) */

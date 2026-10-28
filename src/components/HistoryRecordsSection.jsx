@@ -28,7 +28,7 @@ import {
   Check,
   ChevronDown
 } from 'lucide-react';
-import { ARS, INT, DEC, parseYmd, pad, parseCount, parseMoney, formatMoneyInput, todayStr, formatThousands, MONTHF } from '../lib/formatters';
+import { ARS, INT, DEC, parseYmd, pad, parseCount, parseMoney, formatMoneyInput, todayStr, formatThousands, MONTHF, getCardNumberFontSize } from '../lib/formatters';
 import { exportHistoryPDF } from '../lib/pdfExport';
 import { canUserDeleteRecords, canUserEditRecords } from '../lib/auth';
 import { CustomDatePicker } from './CustomDatePicker';
@@ -674,8 +674,8 @@ export function HistoryRecordsSection({
             </span>
           </div>
 
-          <div className="my-2">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+          <div className="my-2 min-h-[44px] flex items-center">
+            <p className={`${getCardNumberFontSize(filteredRecords.length)} font-black text-white tracking-tight whitespace-nowrap`}>
               <AnimatedNumber value={filteredRecords.length} formatter={(v) => INT.format(v)} />
             </p>
           </div>
@@ -709,8 +709,8 @@ export function HistoryRecordsSection({
             </span>
           </div>
 
-          <div className="my-2">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-emerald-400 tracking-tight">
+          <div className="my-2 min-h-[44px] flex items-center">
+            <p className={`${getCardNumberFontSize(totals.venta, { isMoney: true })} font-black text-emerald-400 tracking-tight whitespace-nowrap`}>
               <AnimatedNumber value={totals.venta} formatter={(v) => ARS.format(v)} />
             </p>
           </div>
@@ -744,8 +744,8 @@ export function HistoryRecordsSection({
             </span>
           </div>
 
-          <div className="my-2">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+          <div className="my-2 min-h-[44px] flex items-center">
+            <p className={`${getCardNumberFontSize(totals.comandas)} font-black text-white tracking-tight whitespace-nowrap`}>
               <AnimatedNumber value={totals.comandas} formatter={(v) => INT.format(v)} />
             </p>
           </div>
@@ -779,8 +779,8 @@ export function HistoryRecordsSection({
             </span>
           </div>
 
-          <div className="my-2">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-purple-300 tracking-tight">
+          <div className="my-2 min-h-[44px] flex items-center">
+            <p className={`${getCardNumberFontSize(totals.unidades)} font-black text-purple-300 tracking-tight whitespace-nowrap`}>
               <AnimatedNumber value={totals.unidades} formatter={(v) => INT.format(v)} />
             </p>
           </div>

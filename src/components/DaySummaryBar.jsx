@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { ARS, INT } from '../lib/formatters';
+import { ARS, INT, getCardNumberFontSize } from '../lib/formatters';
 import { CheckCircle2, TrendingUp, ShoppingBag, Receipt, DollarSign } from 'lucide-react';
 import { gsap, useGSAP } from '../lib/animations';
 import { AnimatedNumber } from './AnimatedNumber';
@@ -113,8 +113,8 @@ export function DaySummaryBar({
             </span>
           </div>
 
-          <div className="my-2">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+          <div className="my-2 min-h-[44px] flex items-center">
+            <p className={`${getCardNumberFontSize(totals.c)} font-black text-white tracking-tight whitespace-nowrap`}>
               <AnimatedNumber value={totals.c} formatter={(v) => INT.format(v)} />
             </p>
           </div>
@@ -151,8 +151,8 @@ export function DaySummaryBar({
             )}
           </div>
 
-          <div className="my-2">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-emerald-400 tracking-tight">
+          <div className="my-2 min-h-[44px] flex items-center">
+            <p className={`${getCardNumberFontSize(totals.v, { isMoney: true })} font-black text-emerald-400 tracking-tight whitespace-nowrap`}>
               <AnimatedNumber value={totals.v} formatter={(v) => ARS.format(v)} />
             </p>
           </div>
@@ -186,8 +186,8 @@ export function DaySummaryBar({
             </span>
           </div>
 
-          <div className="my-2">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-purple-300 tracking-tight">
+          <div className="my-2 min-h-[44px] flex items-center">
+            <p className={`${getCardNumberFontSize(totals.u)} font-black text-purple-300 tracking-tight whitespace-nowrap`}>
               <AnimatedNumber value={totals.u} formatter={(v) => INT.format(v)} />
             </p>
           </div>

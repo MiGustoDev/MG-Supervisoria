@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ARS, INT, DEC, fmtDay } from '../lib/formatters';
+import { ARS, INT, DEC, fmtDay, getCardNumberFontSize } from '../lib/formatters';
 import { CustomMonthPicker } from './CustomMonthPicker';
 import { Calendar, DollarSign, Receipt, ShoppingBag, Target, FileText } from 'lucide-react';
 import { gsap, useGSAP } from '../lib/animations';
@@ -79,8 +79,8 @@ export function MonthlyDashboard({
             </span>
           </div>
 
-          <div className="my-2">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-emerald-400 tracking-tight">
+          <div className="my-2 min-h-[44px] flex items-center">
+            <p className={`${getCardNumberFontSize(kpis.venta, { isMoney: true })} font-black text-emerald-400 tracking-tight whitespace-nowrap`}>
               <AnimatedNumber value={kpis.venta} formatter={(v) => ARS.format(v)} />
             </p>
           </div>
@@ -118,8 +118,8 @@ export function MonthlyDashboard({
             </span>
           </div>
 
-          <div className="my-2">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
+          <div className="my-2 min-h-[44px] flex items-center">
+            <p className={`${getCardNumberFontSize(kpis.comandas)} font-black text-white tracking-tight whitespace-nowrap`}>
               <AnimatedNumber value={kpis.comandas} formatter={(v) => INT.format(v)} />
             </p>
           </div>
@@ -153,8 +153,8 @@ export function MonthlyDashboard({
             </span>
           </div>
 
-          <div className="my-2">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-purple-300 tracking-tight">
+          <div className="my-2 min-h-[44px] flex items-center">
+            <p className={`${getCardNumberFontSize(kpis.unidades)} font-black text-purple-300 tracking-tight whitespace-nowrap`}>
               <AnimatedNumber value={kpis.unidades} formatter={(v) => INT.format(v)} />
             </p>
           </div>
@@ -194,8 +194,8 @@ export function MonthlyDashboard({
             </span>
           </div>
 
-          <div className="my-2">
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-teal-300 tracking-tight">
+          <div className="my-2 min-h-[44px] flex items-center">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-black text-teal-300 tracking-tight whitespace-nowrap">
               <AnimatedNumber value={kpis.cumplimientoPorcentaje} formatter={(v) => `${v}%`} />
             </p>
           </div>
