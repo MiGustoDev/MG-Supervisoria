@@ -1278,17 +1278,17 @@ export default function App() {
           /* TAB 1: CARGA DIARIA (Enfocada 100% en la carga) */
           <>
             {/* Hero & Selection Controls */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-xl mb-4 sm:mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl sm:rounded-3xl p-3 sm:p-6 shadow-xl mb-4 sm:mb-6">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
             {/* Supervisor Selector */}
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <UserCheck className="w-4 h-4 text-amber-400" />
-                  <span>Supervisora a Cargo</span>
+            <div className="min-w-0">
+              <label className="block text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 sm:mb-2 flex items-center justify-between truncate">
+                <span className="flex items-center gap-1 sm:gap-1.5 truncate">
+                  <UserCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
+                  <span className="truncate">Supervisora a Cargo</span>
                 </span>
                 {!isUserAdmin(currentUser) && (
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                  <span className="hidden sm:inline text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                     Asignada por sesión
                   </span>
                 )}
@@ -1314,27 +1314,27 @@ export default function App() {
                 />
               ) : (
                 /* Supervisor: Locked strictly to their own account */
-                <div className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3 text-white font-bold text-base shadow-inner flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-2.5 sm:px-4 py-2 sm:py-3 text-white font-bold text-xs sm:text-base shadow-inner flex items-center justify-between">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                     <UserAvatar
                       user={currentUser}
-                      className="w-7 h-7 rounded-lg"
+                      className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg shrink-0"
                       textClassName="text-xs font-extrabold text-white"
                     />
-                    <span>{currentUser?.name}</span>
+                    <span className="truncate">{currentUser?.name}</span>
                   </div>
-                  <span className="text-xs text-amber-400 font-extrabold bg-amber-500/10 px-2.5 py-1 rounded-xl border border-amber-500/20">
-                    {activeStores.length} locales
+                  <span className="text-[10px] sm:text-xs text-amber-400 font-extrabold bg-amber-500/10 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl border border-amber-500/20 shrink-0">
+                    {activeStores.length} <span className="hidden sm:inline">locales</span>
                   </span>
                 </div>
               )}
             </div>
 
             {/* Date Selector */}
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-amber-400" />
-                <span>Día a Cargar</span>
+            <div className="min-w-0">
+              <label className="block text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 sm:mb-2 flex items-center gap-1 sm:gap-1.5 truncate">
+                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
+                <span className="truncate">Día a Cargar</span>
               </label>
 
               <CustomDatePicker
@@ -1354,9 +1354,9 @@ export default function App() {
           </div>
 
           {/* Banner de Carga Rápida con Excel */}
-          <div className="mt-4 pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 text-xs text-slate-300">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+          <div className="mt-3.5 sm:mt-4 pt-3.5 sm:pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 text-xs text-slate-300 text-center sm:text-left">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0 hidden sm:block" />
               <span>
                 ¿Tenés la planilla de ventas de hoy? Cargá todas las tiendas de <strong className="text-white">{activeSupName}</strong> automáticamente.
               </span>
@@ -1364,7 +1364,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsExcelModalOpen(true)}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 transition active:scale-95 cursor-pointer shrink-0"
+              className="w-auto px-4 py-2 sm:py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white font-extrabold text-xs sm:text-sm inline-flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 transition active:scale-95 cursor-pointer shrink-0"
               title="Importar comandas, ventas y unidades desde planilla Excel"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0" />
