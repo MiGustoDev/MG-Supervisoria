@@ -74,18 +74,19 @@ export function RangeReportDashboard({
       <div className="bg-slate-900/70 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xl">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
           {/* Selector de Rango */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                <span>Fecha Desde</span>
+          <div className="grid grid-cols-2 sm:flex sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <div className="min-w-0">
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1 truncate">
+                <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="truncate">Fecha Desde</span>
               </label>
-              <div className="w-full sm:w-48">
+              <div className="w-full sm:w-44">
                 <CustomDatePicker
                   value={startDate}
                   maxDate={endDate}
                   onChange={onStartDateChange}
                   compact={true}
+                  align="left"
                 />
               </div>
             </div>
@@ -94,17 +95,18 @@ export function RangeReportDashboard({
               →
             </div>
 
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                <span>Fecha Hasta</span>
+            <div className="min-w-0">
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1 truncate">
+                <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="truncate">Fecha Hasta</span>
               </label>
-              <div className="w-full sm:w-48">
+              <div className="w-full sm:w-44">
                 <CustomDatePicker
                   value={endDate}
                   minDate={startDate}
                   onChange={onEndDateChange}
                   compact={true}
+                  align="right"
                 />
               </div>
             </div>
@@ -137,10 +139,10 @@ export function RangeReportDashboard({
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div ref={kpiGridRef} className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 font-mono-numbers">
+      {/* KPI Cards Grid: Responsive mobile (Venta 1st row, Comandas & Empanadas 2nd row 2x2, Cumplimiento 3rd row) */}
+      <div ref={kpiGridRef} className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 font-mono-numbers">
         {/* Venta Acumulada */}
-        <div className="bg-slate-900/60 border border-slate-800 hover:border-amber-500/30 rounded-2xl p-4 sm:p-5 relative overflow-hidden group shadow-xl transition-colors">
+        <div className="bg-slate-900/60 border border-slate-800 hover:border-amber-500/30 rounded-2xl p-4 sm:p-5 relative overflow-hidden group shadow-xl transition-colors order-1 md:order-1 col-span-2 md:col-span-1">
           <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition" />
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
@@ -168,12 +170,12 @@ export function RangeReportDashboard({
         </div>
 
         {/* Comandas Totales */}
-        <div className="bg-slate-900/60 border border-slate-800 hover:border-blue-500/30 rounded-2xl p-4 sm:p-5 relative overflow-hidden group shadow-xl transition-colors">
+        <div className="bg-slate-900/60 border border-slate-800 hover:border-blue-500/30 rounded-2xl p-3.5 sm:p-5 relative overflow-hidden group shadow-xl transition-colors order-2 md:order-2 col-span-1">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans truncate">
               Comandas Totales
             </span>
-            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
+            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 shrink-0">
               <Receipt className="w-4 h-4" />
             </div>
           </div>
@@ -182,21 +184,21 @@ export function RangeReportDashboard({
               <AnimatedNumber value={kpis.comandas || 0} formatter={(v) => INT.format(v)} />
             </div>
           </div>
-          <div className="text-xs text-slate-500 mt-1 font-sans">
+          <div className="text-xs text-slate-500 mt-1 font-sans truncate">
             <span className="text-blue-300 font-bold font-mono-numbers">
               <AnimatedNumber value={kpis.cargasRealizadas || 0} formatter={(v) => INT.format(v)} />
             </span>{' '}
-            registros diarios
+            registros
           </div>
         </div>
 
         {/* Unidades Totales */}
-        <div className="bg-slate-900/60 border border-slate-800 hover:border-purple-500/30 rounded-2xl p-4 sm:p-5 relative overflow-hidden group shadow-xl transition-colors">
+        <div className="bg-slate-900/60 border border-slate-800 hover:border-purple-500/30 rounded-2xl p-3.5 sm:p-5 relative overflow-hidden group shadow-xl transition-colors order-3 md:order-3 col-span-1">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans truncate">
               Empanadas (Unid.)
             </span>
-            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
+            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 shrink-0">
               <ShoppingBag className="w-4 h-4" />
             </div>
           </div>
@@ -205,13 +207,13 @@ export function RangeReportDashboard({
               <AnimatedNumber value={kpis.unidades || 0} formatter={(v) => INT.format(v)} />
             </div>
           </div>
-          <div className="text-xs text-slate-500 mt-1 font-sans">
+          <div className="text-xs text-slate-500 mt-1 font-sans truncate">
             {kpis.unidPorComanda ? (
               <>
                 <span className="text-purple-300 font-bold font-mono-numbers">
                   <AnimatedNumber value={kpis.unidPorComanda} decimals={1} formatter={(v) => DEC.format(v)} />
                 </span>{' '}
-                por comanda
+                /cmda
               </>
             ) : (
               '–'
@@ -220,7 +222,7 @@ export function RangeReportDashboard({
         </div>
 
         {/* Cumplimiento de Carga en el Rango */}
-        <div className="bg-slate-900/60 border border-slate-800 hover:border-emerald-500/30 rounded-2xl p-4 sm:p-5 relative overflow-hidden group shadow-xl transition-colors">
+        <div className="bg-slate-900/60 border border-slate-800 hover:border-emerald-500/30 rounded-2xl p-4 sm:p-5 relative overflow-hidden group shadow-xl transition-colors order-4 md:order-4 col-span-2 md:col-span-1">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">
               Cumplimiento

@@ -1157,13 +1157,29 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div
+                className={`w-full sm:w-auto flex gap-2 sm:gap-3 ${
+                  rankingView === 'rango'
+                    ? 'flex-col sm:flex-row items-stretch sm:items-center'
+                    : 'flex-row items-center justify-between sm:justify-start'
+                }`}
+              >
                 {/* Switch Día / Mes / Rango */}
-                <div className="flex p-1.5 bg-slate-950 rounded-2xl border border-slate-800 shadow-inner">
+                <div
+                  className={`p-1 sm:p-1.5 bg-slate-950 rounded-2xl border border-slate-800 shadow-inner ${
+                    rankingView === 'rango'
+                      ? 'w-full sm:w-auto grid grid-cols-3 sm:flex'
+                      : 'flex w-fit'
+                  }`}
+                >
                   <button
                     type="button"
                     onClick={() => handleRankingViewChange('dia')}
-                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer ${
+                    className={`py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer text-center ${
+                      rankingView === 'rango'
+                        ? 'w-full sm:w-auto px-2 sm:px-4'
+                        : 'px-3.5 sm:px-4'
+                    } ${
                       rankingView === 'dia'
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -1174,7 +1190,11 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => handleRankingViewChange('mes')}
-                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer ${
+                    className={`py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer text-center ${
+                      rankingView === 'rango'
+                        ? 'w-full sm:w-auto px-2 sm:px-4'
+                        : 'px-3.5 sm:px-4'
+                    } ${
                       rankingView === 'mes'
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -1185,7 +1205,11 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => handleRankingViewChange('rango')}
-                    className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer ${
+                    className={`py-2 rounded-xl text-xs sm:text-sm font-black transition active:scale-95 cursor-pointer text-center ${
+                      rankingView === 'rango'
+                        ? 'w-full sm:w-auto px-2 sm:px-4'
+                        : 'px-3.5 sm:px-4'
+                    } ${
                       rankingView === 'rango'
                         ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 scale-[1.02]'
                         : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -1195,29 +1219,38 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Botón Exportar PDF de Ranking / Métricas / Rango */}
-                <button
-                  type="button"
-                  onClick={handleExportRankingPdf}
-                  className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-rose-600/25 active:scale-95 cursor-pointer"
-                  title="Descargar informe ejecutivo en PDF de ranking o métricas"
+                {/* Contenedor de Botones de Exportar */}
+                <div
+                  className={`flex items-center gap-2 ${
+                    rankingView === 'rango' ? 'w-full sm:w-auto' : 'w-auto'
+                  }`}
                 >
-                  <FileText className="w-4 h-4" />
-                  <span>Exportar PDF</span>
-                </button>
-
-                {/* Botón Exportar Excel cuando esté en Rango */}
-                {rankingView === 'rango' && (
+                  {/* Botón Exportar PDF de Ranking / Métricas / Rango */}
                   <button
                     type="button"
-                    onClick={handleExportRangeCsv}
-                    className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-emerald-600/25 active:scale-95 cursor-pointer"
-                    title="Descargar CSV del rango de fechas seleccionado"
+                    onClick={handleExportRankingPdf}
+                    className={`flex items-center justify-center gap-1.5 px-3.5 sm:px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-rose-600/25 active:scale-95 cursor-pointer whitespace-nowrap ${
+                      rankingView === 'rango' ? 'flex-1 sm:flex-initial' : 'flex-initial'
+                    }`}
+                    title="Descargar informe ejecutivo en PDF de ranking o métricas"
                   >
-                    <FileText className="w-4 h-4" />
-                    <span>Exportar CSV</span>
+                    <FileText className="w-4 h-4 shrink-0" />
+                    <span>Exportar PDF</span>
                   </button>
-                )}
+
+                  {/* Botón Exportar CSV cuando esté en Rango */}
+                  {rankingView === 'rango' && (
+                    <button
+                      type="button"
+                      onClick={handleExportRangeCsv}
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 sm:px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-emerald-600/25 active:scale-95 cursor-pointer whitespace-nowrap"
+                      title="Descargar CSV del rango de fechas seleccionado"
+                    >
+                      <FileText className="w-4 h-4 shrink-0" />
+                      <span>Exportar CSV</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 

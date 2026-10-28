@@ -10,7 +10,7 @@ const MONTH_NAMES = [
 
 const DAY_NAMES = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'];
 
-export function CustomDatePicker({ value, onChange, minDate, maxDate, compact = false }) {
+export function CustomDatePicker({ value, onChange, minDate, maxDate, compact = false, align = 'right' }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
   const popoverRef = useRef(null);
@@ -175,7 +175,9 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, compact = 
       {isOpen && (
         <div
           ref={popoverRef}
-          className="absolute top-full right-0 mt-2 z-50 w-[min(calc(100vw-28px),320px)] sm:w-80 bg-slate-900 border border-slate-700/80 rounded-2xl p-3 sm:p-4 shadow-2xl shadow-black/80 backdrop-blur-xl origin-top-right"
+          className={`absolute top-full mt-2 z-50 w-[min(calc(100vw-28px),320px)] sm:w-80 bg-slate-900 border border-slate-700/80 rounded-2xl p-3 sm:p-4 shadow-2xl shadow-black/80 backdrop-blur-xl ${
+            align === 'left' ? 'left-0 origin-top-left' : 'right-0 origin-top-right'
+          }`}
         >
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
